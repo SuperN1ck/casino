@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "casino"
+version = "0.0.1"
+authors = [
+  { name="Nick Heppert", email="heppert@cs.uni-freiburg.de" },
+]
+description = "A collection of python utility functions"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GPL-3.0-or-later",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/SuperN1ck/casino"
+"Bug Tracker" = "https://github.com/SuperN1ck/casino/issues"
