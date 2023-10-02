@@ -1,18 +1,22 @@
+import logging
 import pathlib
-from typing import Any, Union, Tuple
+from typing import Any, Tuple, Union
+
+try:
+    import torch
+except:
+    logging.debug("torch not availble. Some functionality in checkpoints.py will break")
 
 
 def save_torch_checkpoint(
     experiment_directory: Union[pathlib.Path, Any],
-    model: "torch.nn.Module",
-    optimizer: "torch.optim.Optimizer",
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
     epoch: int,
     current_epoch: bool = False,
     latest: bool = True,
     best: bool = False,
 ):
-    import torch
-
     if not isinstance(experiment_directory, pathlib.Path):
         experiment_directory = pathlib.Path(experiment_directory)
     experiment_directory /= "checkpoints"
@@ -39,9 +43,7 @@ def save_torch_checkpoint(
 
 def load_torch_checkpoint(
     experiment_directory: Union[pathlib.Path, Any], ckpt_name: str = "best"
-) -> Tuple["torch.nn.Module", "torch.optim.Optimizer", int]:
-    import torch
-
+) -> Tuple[torch.nn.Module, torch.optim.Optimizer, int]:
     if not isinstance(experiment_directory, pathlib.Path):
         experiment_directory = pathlib.Path(experiment_directory)
     experiment_directory /= "checkpoints"

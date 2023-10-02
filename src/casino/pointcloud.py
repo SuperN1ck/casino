@@ -1,5 +1,10 @@
-import numpy as np
+import logging
 from typing import Optional
+
+try:
+    import numpy as np
+except:
+    logging.debug("numpy not availble. Most functionality in pointcloud.py will break")
 
 
 class Intrinsics:

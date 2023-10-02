@@ -1,4 +1,14 @@
-def default_init_torch(module: "torch.nn.Module"):
+import logging
+
+try:
+    import torch
+except:
+    logging.debug(
+        "torch not availble. Some functionality in default_init.py will break"
+    )
+
+
+def default_init_torch(module: torch.nn.Module):
     """Initialize parameters of the module.
 
     For convolution, weights are initialized by Kaiming method and
@@ -6,8 +16,6 @@ def default_init_torch(module: "torch.nn.Module"):
     For batch normalization, scales and biases are set to 1 and 0,
     respectively.
     """
-    import torch
-
     # Make sure we don't overwrite previous weights
     # when weights are frozen (i.e. no gradient required)
     # TODO Does this cover all frozen cases?

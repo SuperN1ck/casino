@@ -1,8 +1,14 @@
 import copy
 import dataclasses
 import enum
+import logging
 import pathlib
 from typing import Any, Dict
+
+try:
+    import torch
+except:
+    logging.debug("torch not availble. Some functionality in dataclasses.py will break")
 
 
 def default_field(obj):
@@ -16,8 +22,6 @@ def collate_flat_dataclass_torch(dps: Any, device: str = "cpu"):
     """
     # if dataclasses.is_dataclass(dps[0]):
     # ^ Could be useful if we move to a recursive approach eventually
-
-    import torch
 
     collated_dp = copy.deepcopy(dps[0])
     for d_field in dataclasses.fields(dps[0]):
