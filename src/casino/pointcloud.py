@@ -9,7 +9,7 @@ except:
 
 class Intrinsics:
     def __init__(
-        self,
+        self: "Intrinsics",
         # these are not actually needed --> can we somehow ensure that our intrinsics is on pixel level?
         # height: float,
         # width: float,
@@ -26,14 +26,21 @@ class Intrinsics:
         self.c_y = c_y
 
     @property
-    def matrix(self):
+    def matrix(self: "Intrinsics"):
         intrinsics = np.zeros((3, 3))
-        intrinsics[0][0] = self.f_x
-        intrinsics[1][1] = self.f_y
-        intrinsics[0][2] = self.c_x
-        intrinsics[1][2] = self.c_y
-        intrinsics[2][2] = 1.0
+        intrinsics[0, 0] = self.f_x
+        intrinsics[1, 1] = self.f_y
+        intrinsics[0, 2] = self.c_x
+        intrinsics[1, 2] = self.c_y
+        intrinsics[2, 2] = 1.0
         return intrinsics
+
+    @staticmethod
+    def from_matrix(matrix: np.ndarray):
+        assert matrix.shape == (3, 3)
+        return Intrinsics(
+            f_x=matrix[0][0], f_y=matrix[1][1], c_x=matrix[0][2], c_y=matrix[1][2]
+        )
 
 
 def get_ordered(uvd: np.ndarray, intrinsics: Intrinsics) -> np.ndarray:
