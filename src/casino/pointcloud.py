@@ -64,6 +64,47 @@ def get_ordered(uvd: np.ndarray, intrinsics: Intrinsics) -> np.ndarray:
     return xyz
 
 
+def get_points(
+    points: np.ndarray,
+    depth: np.ndarray,
+    intrinsics: Intrinsics,
+    rgb: Optional[np.ndarray] = None,
+) -> np.ndarray:
+    """
+    Points should be in u-v format?
+    u: vertical axis?
+    v: horizontal axis?
+    """
+    assert points.shape[1] == 2 and points.ndim == 2
+
+    # Copied from Max :)
+    u_crd, v_crd = points[:, 0], points[:, 1]
+    # save positions that map to outside of bounds, so that they can be
+    # set to 0
+    mask_u = np.logical_or(u_crd < 0, u_crd >= depth.shape[0])
+    mask_v = np.logical_or(v_crd < 0, v_crd >= depth.shape[1])
+    mask_uv = np.logical_not(np.logical_or(mask_u, mask_v))
+    # temporarily clip out of bounds values so that we can use numpy
+    # indexing
+    u_clip = np.clip(u_crd, 0, depth.shape[0] - 1)
+    v_clip = np.clip(v_crd, 0, depth.shape[1] - 1)
+
+    logging.debug("Found out-of-bounds values for ")
+
+    pix_coords = np.stack(
+        (
+            v_clip,
+            u_clip,
+            (depth[..., 0] if depth.ndim == 3 else depth)[u_clip, v_clip],
+        ),
+        axis=-1,
+    )
+    points_3d = get_ordered(pix_coords, intrinsics)
+    if rgb is None:
+        return points_3d
+    return points_3d, rgb[u_clip, v_clip, :]
+
+
 def get_xyz(depth: np.ndarray, intrinsics: Intrinsics) -> np.ndarray:
     """
     Returns xyz image,
@@ -89,7 +130,7 @@ def get_pc(
     depth: np.ndarray,
     intrinsics: Intrinsics,
     mask: Optional[np.ndarray] = None,
-    rgb: Optional[np.ndarray] = None
+    rgb: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     xyz = get_xyz(depth, intrinsics)
 
@@ -109,5 +150,3 @@ def get_pc(
         return pc_clean
     
     return pc_clean, rgb.copy()[mask][valid_indices]
-
-
