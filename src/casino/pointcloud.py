@@ -89,6 +89,7 @@ def get_pc(
     depth: np.ndarray,
     intrinsics: Intrinsics,
     mask: Optional[np.ndarray] = None,
+    rgb: Optional[np.ndarray] = None
 ) -> np.ndarray:
     xyz = get_xyz(depth, intrinsics)
 
@@ -101,4 +102,12 @@ def get_pc(
         mask = mask[..., 0]
 
     pc_noisy = xyz[mask]
-    return pc_noisy[~np.any(np.isnan(pc_noisy), axis=-1)]
+    valid_indices = ~np.any(np.isnan(pc_noisy), axis=-1)
+
+    pc_clean = pc_noisy[valid_indices]
+    if rgb is None:
+        return pc_clean
+    
+    return pc_clean, rgb.copy()[mask][valid_indices]
+
+
