@@ -5,6 +5,7 @@ try:
     import numpy as np
 except:
     logging.debug("numpy not availble. Most functionality in pointcloud.py will break")
+    # TODO Add a fake np.ndarray
 
 
 class Intrinsics:
@@ -148,5 +149,22 @@ def get_pc(
     pc_clean = pc_noisy[valid_indices]
     if rgb is None:
         return pc_clean
-    
+
     return pc_clean, rgb.copy()[mask][valid_indices]
+
+
+# TODO Add optional argument specifying to 
+def make_homogeneous(points: np.ndarray) -> np.ndarray:
+    """
+    Adds a one at the end of the second dimension
+    """
+    assert points.ndim == 2
+    return np.hstack((points, np.ones((points.shape[0], 1))))
+
+
+def make_non_homoegeneous(points: np.ndarray) -> np.ndarray:
+    assert points.ndim == 2
+    """
+    Divides last dimensions with the last entry
+    """
+    return points[:, :-1] / points[:, -1][..., None]
