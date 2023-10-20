@@ -10,8 +10,8 @@ except:
 
 def save_torch_checkpoint(
     experiment_directory: Union[pathlib.Path, Any],
-    model: torch.nn.Module,
-    optimizer: torch.optim.Optimizer,
+    model: "torch.nn.Module",
+    optimizer: "torch.optim.Optimizer",
     epoch: int,
     current_epoch: bool = False,
     latest: bool = True,
@@ -43,7 +43,7 @@ def save_torch_checkpoint(
 
 def load_torch_checkpoint(
     experiment_directory: Union[pathlib.Path, Any], ckpt_name: str = "best"
-) -> Tuple[torch.nn.Module, torch.optim.Optimizer, int]:
+) -> Tuple["torch.nn.Module", "torch.optim.Optimizer", int]:
     if not isinstance(experiment_directory, pathlib.Path):
         experiment_directory = pathlib.Path(experiment_directory)
     experiment_directory /= "checkpoints"

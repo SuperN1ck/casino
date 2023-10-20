@@ -8,7 +8,7 @@ except:
     )
 
 
-def default_init_torch(module: torch.nn.Module):
+def default_init_torch(module: "torch.nn.Module"):
     """Initialize parameters of the module.
 
     For convolution, weights are initialized by Kaiming method and

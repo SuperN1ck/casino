@@ -5,7 +5,6 @@ try:
     import numpy as np
 except:
     logging.debug("numpy not availble. Most functionality in pointcloud.py will break")
-    # TODO Add a fake np.ndarray
 
 
 class Intrinsics:
@@ -37,14 +36,14 @@ class Intrinsics:
         return intrinsics
 
     @staticmethod
-    def from_matrix(matrix: np.ndarray):
+    def from_matrix(matrix: "np.ndarray"):
         assert matrix.shape == (3, 3)
         return Intrinsics(
             f_x=matrix[0][0], f_y=matrix[1][1], c_x=matrix[0][2], c_y=matrix[1][2]
         )
 
 
-def get_ordered(uvd: np.ndarray, intrinsics: Intrinsics) -> np.ndarray:
+def get_ordered(uvd: "np.ndarray", intrinsics: Intrinsics) -> "np.ndarray":
     """
     uvd is any tensor where the last dimension should have dimension 3, with following content:
         u: u coordinate in the image
@@ -66,11 +65,11 @@ def get_ordered(uvd: np.ndarray, intrinsics: Intrinsics) -> np.ndarray:
 
 
 def get_points(
-    points: np.ndarray,
-    depth: np.ndarray,
+    points: "np.ndarray",
+    depth: "np.ndarray",
     intrinsics: Intrinsics,
-    rgb: Optional[np.ndarray] = None,
-) -> np.ndarray:
+    rgb: Optional["np.ndarray"] = None,
+) -> "np.ndarray":
     """
     Points should be in u-v format?
     u: vertical axis?
@@ -106,7 +105,7 @@ def get_points(
     return points_3d, rgb[u_clip, v_clip, :]
 
 
-def get_xyz(depth: np.ndarray, intrinsics: Intrinsics) -> np.ndarray:
+def get_xyz(depth: "np.ndarray", intrinsics: Intrinsics) -> "np.ndarray":
     """
     Returns xyz image,
     depth <= 0.0 will be nan
@@ -128,11 +127,11 @@ def get_xyz(depth: np.ndarray, intrinsics: Intrinsics) -> np.ndarray:
 
 
 def get_pc(
-    depth: np.ndarray,
+    depth: "np.ndarray",
     intrinsics: Intrinsics,
-    mask: Optional[np.ndarray] = None,
-    rgb: Optional[np.ndarray] = None,
-) -> np.ndarray:
+    mask: Optional["np.ndarray"] = None,
+    rgb: Optional["np.ndarray"] = None,
+) -> "np.ndarray":
     xyz = get_xyz(depth, intrinsics)
 
     if mask is None:
@@ -153,8 +152,8 @@ def get_pc(
     return pc_clean, rgb.copy()[mask][valid_indices]
 
 
-# TODO Add optional argument specifying to 
-def make_homogeneous(points: np.ndarray) -> np.ndarray:
+# TODO Add optional argument specifying to ensure correct numbers
+def make_homogeneous(points: "np.ndarray") -> "np.ndarray":
     """
     Adds a one at the end of the second dimension
     """
@@ -162,7 +161,7 @@ def make_homogeneous(points: np.ndarray) -> np.ndarray:
     return np.hstack((points, np.ones((points.shape[0], 1))))
 
 
-def make_non_homoegeneous(points: np.ndarray) -> np.ndarray:
+def make_non_homoegeneous(points: "np.ndarray") -> "np.ndarray":
     assert points.ndim == 2
     """
     Divides last dimensions with the last entry
