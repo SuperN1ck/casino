@@ -2,6 +2,13 @@ import operator
 from typing import Dict
 from collections import OrderedDict
 
+try:
+    import numpy as np
+except:
+    logging.debug(
+        "numpy not availble. Some functionality in special_dicts.py will break"
+    )
+
 
 class AccumulatorDict(dict):
     def __init__(self, *args, accumulator=operator.add, **kwargs):
@@ -19,6 +26,16 @@ class AccumulatorDict(dict):
     def increment_dict(self, other: Dict):
         for key, value in other.items():
             self.increment(key, value)
+
+
+class NumpyConcatenateDict(AccumulatorDict):
+    def __init__(self, axis: int = 0, **kwargs):
+        super(NumpyConcatenateDict, self).__init__(**kwargs)
+
+        def wrapped_concatenate(arr0: "np.ndarray", arr1: "np.ndarray"):
+            return np.concatenate((arr0, arr1), axis=axis)
+
+        self.accumulator = wrapped_concatenate
 
 
 class IndexDict(dict):
