@@ -10,7 +10,7 @@
 
 
 from . import (cache, compress, dataclasses, experiments, learning, notebooks,
-               pointcloud, random, special_dicts)
+               pointcloud, random, special_dicts, visualization)
 
 __all__ = [
     "cache",
@@ -22,4 +22,5 @@ __all__ = [
     "pointcloud",
     "random",
     "special_dicts",
+    "visualization",
 ]
