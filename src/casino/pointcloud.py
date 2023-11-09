@@ -167,3 +167,33 @@ def make_non_homoegeneous(points: "np.ndarray") -> "np.ndarray":
     Divides last dimensions with the last entry
     """
     return points[:, :-1] / points[:, -1][..., None]
+
+
+def project_onto_image(points: "np.ndarray", intrinsics: Intrinsics) -> "np.ndarray":
+    assert points.shape[-1] == 3
+    return np.stack(
+        (
+            points[..., 0] / points[..., 2] * intrinsics.f_x + intrinsics.c_x,
+            points[..., 1] / points[..., 2] * intrinsics.f_y + intrinsics.c_y,
+        ),
+        axis=-1,
+    )
+
+
+def transform_3d_points(
+    points: "np.ndarray", transform: np.ndarray, post_multiply: bool = False
+) -> "np.ndarray":
+    """
+    Post multiplies transform
+    """
+    assert points.ndim == 2
+    assert points.shape[1] == 3
+    assert transform.shape[-2:] == (4, 4)
+
+    points_hom = make_homogeneous(points)
+    if post_multiply:
+        points_trans = points_hom @ transform
+    else:  # We do pre-multiplying :)
+        points_trans = (transform @ points_hom.T).T
+
+    return make_non_homoegeneous(points_trans)
