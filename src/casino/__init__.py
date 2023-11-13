@@ -8,9 +8,26 @@
 #     except:
 #         logging.debug(f"Can not import {module}, some functionality might be broken.")
 
+import pathlib
 
-from . import (cache, compress, dataclasses, experiments, learning, notebooks,
-               pointcloud, random, special_dicts, visualization)
+BASE_DIR = pathlib.Path(__file__).parents[2]
+DATA_DIR = BASE_DIR / "data"
+
+
+from . import (
+    cache,
+    compress,
+    dataclasses,
+    experiments,
+    learning,
+    notebooks,
+    pointcloud,
+    random,
+    special_dicts,
+    visualization,
+)
+
+from .ColorMap2D import ColorMap2D
 
 __all__ = [
     "cache",
@@ -23,4 +40,5 @@ __all__ = [
     "random",
     "special_dicts",
     "visualization",
+    "ColorMap2D",
 ]
