@@ -27,6 +27,12 @@ class AccumulatorDict(dict):
         for key, value in other.items():
             self.increment(key, value)
 
+    def as_default_dict(self):
+        """
+        Careful, full copy
+        """
+        return {k: v for k, v in self.items()}
+
 
 class NumpyConcatenateDict(AccumulatorDict):
     def __init__(self, axis: int = 0, **kwargs):
