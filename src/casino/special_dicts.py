@@ -75,6 +75,12 @@ class IndexDict(dict):
     #   for k, v in dict(*args, **kwargs).items():
     #     self[k] = v
 
+    def get_key(self, index):
+        for k, v in self.items():
+            if v != index:
+                continue
+            
+            return k
 
 def remove_data_parallel(old_state_dict):
     new_state_dict = OrderedDict()
