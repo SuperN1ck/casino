@@ -15,9 +15,11 @@ def save_cfg(
     experiment_id: str = "experiment_id",  # Should be an attribute of the class?
     file_name: str = "config.yaml",
 ):
+    """
+    `cfg.<experiment_id>` should exist!
+    """
     if not isinstance(experiment_directory, pathlib.Path):
         experiment_directory = pathlib.Path(experiment_directory)
-    experiment_directory /= "runs"
     experiment_directory /= str(getattr(cfg, experiment_id))
     experiment_directory.mkdir(parents=True, exist_ok=True)
     with open(experiment_directory / file_name, "w") as file:
