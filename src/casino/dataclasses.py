@@ -15,29 +15,33 @@ def default_field(obj):
     return dataclasses.field(default_factory=lambda: copy.copy(obj))
 
 
-def collate_flat_dataclass_torch(dps: Any, device: str = "cpu"):
+def collate_dataclass_torch(dps: Any, device: str = "cpu"):
     """
     Can't process a full tree, only a single level
     TODO Make this recursive eventually
     """
-    # if dataclasses.is_dataclass(dps[0]):
-    # ^ Could be useful if we move to a recursive approach eventually
-
     collated_dp = copy.deepcopy(dps[0])
     for d_field in dataclasses.fields(dps[0]):
         # Check for None in batch
-        if max(is_none:=[getattr(dp, d_field.name) is None for dp in dps]) == True:
+        if max(is_none := [getattr(dp, d_field.name) is None for dp in dps]) == True:
             # Only some are None
             if min(is_none) == False:
-                raise ValueError(f'Spurrious Nones found in field {d_field.name}. Either the entire batch needs to be None, or none.')
+                raise ValueError(
+                    f"Spurrious Nones found in field {d_field.name}. Either the entire batch needs to be None, or none."
+                )
             setattr(collated_dp, d_field.name, None)
             continue
 
-        # Use pytorch default collating for "leaves"
-        collated_container = torch.utils.data.default_collate(
-            [getattr(dp, d_field.name) for dp in dps]
+        field_values = [getattr(dp, d_field.name) for dp in dps]
+
+        collated_container = (
+            collate_dataclass_torch(field_values, device=device)  # Recursive call
+            if dataclasses.is_dataclass(field_values[0])
+            else torch.utils.data.default_collate(
+                field_values
+            )  # Use pytorch default collating for "leaves"
         )
-        # Move to
+        # Move to device
         if type(collated_container) == torch.Tensor:
             collated_container = collated_container.to(device)
 
