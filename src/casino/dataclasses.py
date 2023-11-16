@@ -25,6 +25,14 @@ def collate_flat_dataclass_torch(dps: Any, device: str = "cpu"):
 
     collated_dp = copy.deepcopy(dps[0])
     for d_field in dataclasses.fields(dps[0]):
+        # Check for None in batch
+        if max(is_none:=[getattr(dp, d_field.name) is None for dp in dps]) == True:
+            # Only some are None
+            if min(is_none) == False:
+                raise ValueError(f'Spurrious Nones found in field {d_field.name}. Either the entire batch needs to be None, or none.')
+            setattr(collated_dp, d_field.name, None)
+            continue
+
         # Use pytorch default collating for "leaves"
         collated_container = torch.utils.data.default_collate(
             [getattr(dp, d_field.name) for dp in dps]
