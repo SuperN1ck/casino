@@ -197,3 +197,15 @@ def transform_3d_points(
         points_trans = (transform @ points_hom.T).T
 
     return make_non_homoegeneous(points_trans)
+
+
+def subsample(point_cloud: np.ndarray, n_points: int, dim: int = 0):
+    assert point_cloud.ndim == 2
+    assert dim in [0, 1]
+    
+    idx = np.random.choice(point_cloud.shape[dim], n_points, replace=False)
+    point_cloud = point_cloud.astype(np.float32)
+    if dim == 0:
+        return point_cloud[idx, :]
+    elif dim == 1:
+        return point_cloud[:, idx]
