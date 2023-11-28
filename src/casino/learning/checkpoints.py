@@ -16,6 +16,7 @@ def save_torch_checkpoint(
     current_epoch: bool = False,
     latest: bool = True,
     best: bool = False,
+    prefix : str = ""
 ):
     if not isinstance(experiment_directory, pathlib.Path):
         experiment_directory = pathlib.Path(experiment_directory)
@@ -24,11 +25,11 @@ def save_torch_checkpoint(
 
     ckpt_names = []
     if current_epoch:
-        ckpt_names.append(f"{epoch}")
+        ckpt_names.append(f"{prefix}{epoch}")
     if latest:
-        ckpt_names.append("latest")
+        ckpt_names.append(f"{prefix}latest")
     if best:
-        ckpt_names.append("best")
+        ckpt_names.append(f"{prefix}best")
 
     for ckpt_name in ckpt_names:
         torch.save(
