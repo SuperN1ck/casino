@@ -93,3 +93,10 @@ class LevelDecayLearningRateSchedule(LearningRateSchedule):
         Epoch does not matter
         """
         return self.initial * ((self.decay) ** self.level)
+    
+
+# Torch Specific Implementations
+def adjust_learning_rate(optimizer: "torch.optim.Optimizer", epoch: int):
+    for param_group in optimizer.param_groups:
+        param_group["lr"] = param_group["scheduler"].get_learning_rate(epoch)
+
