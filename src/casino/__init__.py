@@ -19,15 +19,15 @@ from . import (
     compress,
     dataclasses,
     experiments,
+    geometry,
+    latents,
     learning,
     notebooks,
     pointcloud,
     random,
     special_dicts,
     visualization,
-    latents,
 )
-
 from .ColorMap2D import ColorMap2D
 
 __all__ = [
@@ -43,4 +43,5 @@ __all__ = [
     "visualization",
     "ColorMap2D",
     "latents",
+    "geometry",
 ]
