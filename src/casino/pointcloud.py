@@ -74,6 +74,7 @@ def get_points(
     Points should be in u-v format?
     u: vertical axis?
     v: horizontal axis?
+    This potentially returns NaNs
     """
     assert points.shape[1] == 2 and points.ndim == 2
 
@@ -88,8 +89,6 @@ def get_points(
     # indexing
     u_clip = np.clip(u_crd, 0, depth.shape[0] - 1)
     v_clip = np.clip(v_crd, 0, depth.shape[1] - 1)
-
-    logging.debug("Found out-of-bounds values for ")
 
     pix_coords = np.stack(
         (
@@ -171,6 +170,10 @@ def make_non_homoegeneous(points: "np.ndarray") -> "np.ndarray":
 
 def project_onto_image(points: "np.ndarray", intrinsics: Intrinsics) -> "np.ndarray":
     assert points.shape[-1] == 3
+    # TODO What about:
+    # - flip x and y rows?
+    # - flip y-axis because frame starts top-right?
+    # No urgent ToDos, this seems to work, but it would be great to test this!
     return np.stack(
         (
             points[..., 0] / points[..., 2] * intrinsics.f_x + intrinsics.c_x,
