@@ -27,6 +27,8 @@ from . import (
     random,
     special_dicts,
     visualization,
+    math,
+    user,
 )
 from .ColorMap2D import ColorMap2D
 
@@ -44,4 +46,6 @@ __all__ = [
     "ColorMap2D",
     "latents",
     "geometry",
+    "math",
+    "user",
 ]
