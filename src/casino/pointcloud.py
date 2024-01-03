@@ -4,7 +4,15 @@ from typing import Optional
 try:
     import numpy as np
 except:
-    logging.debug("numpy not availble. Most functionality in pointcloud.py will break")
+    logging.debug("numpy not availble. Most functionality in pointcloud.py will break.")
+
+
+try:
+    import open3d as o3d
+except:
+    logging.debug(
+        "open3d not available. Some functionality in pointcloud.py will break."
+    )
 
 
 class Intrinsics:
@@ -184,7 +192,7 @@ def project_onto_image(points: "np.ndarray", intrinsics: Intrinsics) -> "np.ndar
 
 
 def transform_3d_points(
-    points: "np.ndarray", transform: np.ndarray, post_multiply: bool = False
+    points: "np.ndarray", transform: "np.ndarray", post_multiply: bool = False
 ) -> "np.ndarray":
     """
     Post multiplies transform
@@ -202,13 +210,40 @@ def transform_3d_points(
     return make_non_homoegeneous(points_trans)
 
 
-def subsample(point_cloud: np.ndarray, n_points: int, dim: int = 0):
+def subsample(point_cloud: "np.ndarray", n_points: int, dim: int = 0):
+    """
+    Randomly subsample points from a point cloud
+    """
     assert point_cloud.ndim == 2
     assert dim in [0, 1]
-    
+
     idx = np.random.choice(point_cloud.shape[dim], n_points, replace=False)
     point_cloud = point_cloud.astype(np.float32)
     if dim == 0:
         return point_cloud[idx, :]
     elif dim == 1:
         return point_cloud[:, idx]
+
+
+def mask_to_coords(mask: "np.ndarray"):
+    """
+    Returns the pixel coordinates of a mask
+    """
+    assert mask.ndim == 2
+    return np.array(np.where(mask)).T
+
+
+def to_o3d(pcd: "np.ndarray", color: "np.ndarray" = None) -> "o3d.geometry.PointCloud":
+    assert pcd.shape[1] == 3
+    assert pcd.ndim == 2
+
+    pcd_o3d = o3d.geometry.PointCloud()
+    pcd_o3d.points = o3d.utility.Vector3dVector(pcd)
+
+    if not color is None:
+        # TODO Add assert for correct scale?
+        assert pcd.shape[1] == 3
+        assert pcd.ndim == 2
+        pcd.colors = o3d.utility.Vector3dVector(color)
+
+    return pcd_o3d
