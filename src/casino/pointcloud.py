@@ -95,8 +95,8 @@ def get_points(
     mask_uv = np.logical_not(np.logical_or(mask_u, mask_v))
     # temporarily clip out of bounds values so that we can use numpy
     # indexing
-    u_clip = np.clip(u_crd, 0, depth.shape[0] - 1)
-    v_clip = np.clip(v_crd, 0, depth.shape[1] - 1)
+    u_clip = np.clip(u_crd[mask_uv], 0, depth.shape[0] - 1)
+    v_clip = np.clip(v_crd[mask_uv], 0, depth.shape[1] - 1)
 
     pix_coords = np.stack(
         (
@@ -233,17 +233,32 @@ def mask_to_coords(mask: "np.ndarray"):
     return np.array(np.where(mask)).T
 
 
-def to_o3d(pcd: "np.ndarray", color: "np.ndarray" = None) -> "o3d.geometry.PointCloud":
+def to_o3d(
+    pcd: "np.ndarray", color: "np.ndarray" = None, filter_invalid: bool = True
+) -> "o3d.geometry.PointCloud":
+    """
+    Careful! if filter_nans == True, we will remove the Nan values in-place!
+    """
     assert pcd.shape[1] == 3
     assert pcd.ndim == 2
+
+    if filter_invalid:
+        pcd = pcd[~np.isnan(pcd).any(axis=1), :]
+        pcd = pcd[~np.isinf(pcd).any(axis=1), :]
 
     pcd_o3d = o3d.geometry.PointCloud()
     pcd_o3d.points = o3d.utility.Vector3dVector(pcd)
 
     if not color is None:
         # TODO Add assert for correct scale?
-        assert pcd.shape[1] == 3
-        assert pcd.ndim == 2
-        pcd.colors = o3d.utility.Vector3dVector(color)
+        assert color.dtype in (np.float32, np.float64)
+        assert color.min() >= 0.0 and color.max() <= 1.0
+        if color.ndim == 1:
+            color = np.expand_dims(color, 0)
+        assert color.shape[1] == 3
+        assert color.ndim == 2
+        if color.shape[0] == 1:
+            color = np.repeat(color, pcd.shape[0], axis=0)
+        pcd_o3d.colors = o3d.utility.Vector3dVector(color)
 
     return pcd_o3d
