@@ -9,7 +9,7 @@ from typing import Union, List
 
 
 def within_range(
-    value: Union[np.ndarray, List, int, float], range: Union[np.ndarray, List]
+    value: Union["np.ndarray", List, int, float], range: Union["np.ndarray", List]
 ):
     """
     Performs a range check using [range[0], range[1]] (including borders)
@@ -30,3 +30,6 @@ def within_range(
     assert range.shape[-1] == 2
     return np.logical_and(value >= range[..., 0], value <= range[..., 1])
 
+
+def multiply_along_axis(A: "np.ndarray", B: "np.ndarray", axis: int):
+    return np.swapaxes(np.swapaxes(A, axis, -1) * B, -1, axis)
