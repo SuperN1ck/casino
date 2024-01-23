@@ -22,11 +22,14 @@ from . import (
     geometry,
     latents,
     learning,
+    masks,
     notebooks,
     pointcloud,
     random,
     special_dicts,
     visualization,
+    math,
+    user,
 )
 from .ColorMap2D import ColorMap2D
 
@@ -44,4 +47,7 @@ __all__ = [
     "ColorMap2D",
     "latents",
     "geometry",
+    "math",
+    "user",
+    "masks",
 ]

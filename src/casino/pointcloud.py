@@ -4,7 +4,15 @@ from typing import Optional
 try:
     import numpy as np
 except:
-    logging.debug("numpy not availble. Most functionality in pointcloud.py will break")
+    logging.debug("numpy not availble. Most functionality in pointcloud.py will break.")
+
+
+try:
+    import open3d as o3d
+except:
+    logging.debug(
+        "open3d not available. Some functionality in pointcloud.py will break."
+    )
 
 
 class Intrinsics:
@@ -87,8 +95,8 @@ def get_points(
     mask_uv = np.logical_not(np.logical_or(mask_u, mask_v))
     # temporarily clip out of bounds values so that we can use numpy
     # indexing
-    u_clip = np.clip(u_crd, 0, depth.shape[0] - 1)
-    v_clip = np.clip(v_crd, 0, depth.shape[1] - 1)
+    u_clip = np.clip(u_crd[mask_uv], 0, depth.shape[0] - 1)
+    v_clip = np.clip(v_crd[mask_uv], 0, depth.shape[1] - 1)
 
     pix_coords = np.stack(
         (
@@ -184,7 +192,7 @@ def project_onto_image(points: "np.ndarray", intrinsics: Intrinsics) -> "np.ndar
 
 
 def transform_3d_points(
-    points: "np.ndarray", transform: np.ndarray, post_multiply: bool = False
+    points: "np.ndarray", transform: "np.ndarray", post_multiply: bool = False
 ) -> "np.ndarray":
     """
     Post multiplies transform
@@ -202,13 +210,47 @@ def transform_3d_points(
     return make_non_homoegeneous(points_trans)
 
 
-def subsample(point_cloud: np.ndarray, n_points: int, dim: int = 0):
+def subsample(point_cloud: "np.ndarray", n_points: int, dim: int = 0):
+    """
+    Randomly subsample points from a point cloud
+    """
     assert point_cloud.ndim == 2
     assert dim in [0, 1]
-    
+
     idx = np.random.choice(point_cloud.shape[dim], n_points, replace=False)
     point_cloud = point_cloud.astype(np.float32)
     if dim == 0:
         return point_cloud[idx, :]
     elif dim == 1:
         return point_cloud[:, idx]
+
+
+def to_o3d(
+    pcd: "np.ndarray", color: "np.ndarray" = None, filter_invalid: bool = True
+) -> "o3d.geometry.PointCloud":
+    """
+    Careful! if filter_nans == True, we will remove the Nan values in-place!
+    """
+    assert pcd.shape[1] == 3
+    assert pcd.ndim == 2
+
+    if filter_invalid:
+        pcd = pcd[~np.isnan(pcd).any(axis=1), :]
+        pcd = pcd[~np.isinf(pcd).any(axis=1), :]
+
+    pcd_o3d = o3d.geometry.PointCloud()
+    pcd_o3d.points = o3d.utility.Vector3dVector(pcd)
+
+    if not color is None:
+        # TODO Add assert for correct scale?
+        assert color.dtype in (np.float32, np.float64)
+        assert color.min() >= 0.0 and color.max() <= 1.0
+        if color.ndim == 1:
+            color = np.expand_dims(color, 0)
+        assert color.shape[1] == 3
+        assert color.ndim == 2
+        if color.shape[0] == 1:
+            color = np.repeat(color, pcd.shape[0], axis=0)
+        pcd_o3d.colors = o3d.utility.Vector3dVector(color)
+
+    return pcd_o3d
