@@ -225,14 +225,6 @@ def subsample(point_cloud: "np.ndarray", n_points: int, dim: int = 0):
         return point_cloud[:, idx]
 
 
-def mask_to_coords(mask: "np.ndarray"):
-    """
-    Returns the pixel coordinates of a mask
-    """
-    assert mask.ndim == 2
-    return np.array(np.where(mask)).T
-
-
 def to_o3d(
     pcd: "np.ndarray", color: "np.ndarray" = None, filter_invalid: bool = True
 ) -> "o3d.geometry.PointCloud":
