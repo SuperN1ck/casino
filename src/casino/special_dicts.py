@@ -10,6 +10,13 @@ except:
     )
 
 
+def invert_dict(input_dict):
+    """
+    Careful, obviousouly full copy
+    """
+    return {v: k for k, v in input_dict.items()}
+
+
 class AccumulatorDict(dict):
     def __init__(self, *args, accumulator=operator.add, **kwargs):
         self.accumulator = accumulator
@@ -79,8 +86,9 @@ class IndexDict(dict):
         for k, v in self.items():
             if v != index:
                 continue
-            
+
             return k
+
 
 def remove_data_parallel(old_state_dict):
     new_state_dict = OrderedDict()
