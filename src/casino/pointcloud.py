@@ -129,7 +129,7 @@ def get_xyz(depth: "np.ndarray", intrinsics: Intrinsics) -> "np.ndarray":
             (depth[..., 0] if depth.ndim == 3 else depth),
         ),
         axis=-1,
-    )
+    ).astype(depth.dtype)
     return get_ordered(pix_coords, intrinsics)
 
 
@@ -145,6 +145,7 @@ def get_pc(
         mask = np.ones(depth.shape[:2], dtype=bool)
     else:
         assert depth.shape[:2] == mask.shape[:2]
+        mask = mask.astype(bool)
 
     if mask.ndim == 3:
         mask = mask[..., 0]
@@ -223,14 +224,6 @@ def subsample(point_cloud: "np.ndarray", n_points: int, dim: int = 0):
         return point_cloud[idx, :]
     elif dim == 1:
         return point_cloud[:, idx]
-
-
-def mask_to_coords(mask: "np.ndarray"):
-    """
-    Returns the pixel coordinates of a mask
-    """
-    assert mask.ndim == 2
-    return np.array(np.where(mask)).T
 
 
 def to_o3d(

@@ -22,6 +22,7 @@ from . import (
     geometry,
     latents,
     learning,
+    masks,
     notebooks,
     pointcloud,
     random,
@@ -48,4 +49,5 @@ __all__ = [
     "geometry",
     "math",
     "user",
+    "masks",
 ]
