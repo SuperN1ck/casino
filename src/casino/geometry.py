@@ -26,3 +26,26 @@ def circle_samples(
         radius * np.stack([np.cos(lin_samples), np.sin(lin_samples)], axis=1) + center
     )
     return circle_samples
+
+
+def to_transformation_matrix(
+    t: Union["np.ndarray", List[float]] = [0.0, 0.0, 0.0],
+    R: Union["np.ndarray", List[List[float]]] = [
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0],
+    ],
+):
+    """
+    Given a translation and rotation, this functions returns a 4x4 homogeneous transformation matrix
+    """
+    t = np.array(t)
+    R = np.array(R)
+
+    assert t.shape == (3,)
+    assert R.shape == (3, 3)
+
+    trans = np.eye(4)
+    trans[:3, :3] = R.copy()
+    trans[:3, 3] = t.copy()
+    return trans
