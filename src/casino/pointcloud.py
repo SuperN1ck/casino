@@ -129,7 +129,7 @@ def get_xyz(depth: "np.ndarray", intrinsics: Intrinsics) -> "np.ndarray":
             (depth[..., 0] if depth.ndim == 3 else depth),
         ),
         axis=-1,
-    )
+    ).astype(depth.dtype)
     return get_ordered(pix_coords, intrinsics)
 
 
@@ -145,6 +145,7 @@ def get_pc(
         mask = np.ones(depth.shape[:2], dtype=bool)
     else:
         assert depth.shape[:2] == mask.shape[:2]
+        mask = mask.astype(bool)
 
     if mask.ndim == 3:
         mask = mask[..., 0]
