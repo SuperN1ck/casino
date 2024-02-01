@@ -77,12 +77,13 @@ def get_points(
     depth: "np.ndarray",
     intrinsics: Intrinsics,
     rgb: Optional["np.ndarray"] = None,
+    remove_out_of_bounds: bool = True,
 ) -> "np.ndarray":
     """
     Points should be in u-v format?
     u: vertical axis?
     v: horizontal axis?
-    This potentially returns NaNs
+    This potentially returns NaNs if depth is invalid/out of bounds
     """
     assert points.shape[1] == 2 and points.ndim == 2
 
@@ -106,10 +107,23 @@ def get_points(
         ),
         axis=-1,
     )
-    points_3d = get_ordered(pix_coords, intrinsics)
+    _points_3d = get_ordered(pix_coords, intrinsics)
+
+    if remove_out_of_bounds and rgb is None:
+        return _points_3d
+    elif remove_out_of_bounds and not rgb is None:
+        return points_3d, rgb[u_clip, v_clip, :]
+
+    # We do not remove bounds
+    N_points = points.shape[0]
+    points_3d = np.full((N_points, 3), np.nan)
+    points_3d[mask_uv, :] = _points_3d
     if rgb is None:
         return points_3d
-    return points_3d, rgb[u_clip, v_clip, :]
+
+    colors = np.full((N_points, 3), np.nan)
+    colors[mask_uv, :] = rgb[u_clip, v_clip]
+    return points_3d, colors
 
 
 def get_xyz(depth: "np.ndarray", intrinsics: Intrinsics) -> "np.ndarray":
