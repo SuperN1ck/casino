@@ -1,6 +1,8 @@
 import logging
 from typing import Optional
 
+from .masks import filter_coords
+
 try:
     import numpy as np
 except:
@@ -86,24 +88,17 @@ def get_points(
     This potentially returns NaNs if depth is invalid/out of bounds
     """
     assert points.shape[1] == 2 and points.ndim == 2
+    if depth.ndim == 3:
+        depth = depth[..., 0]
 
-    # Copied from Max :)
-    u_crd, v_crd = points[:, 0], points[:, 1]
-    # save positions that map to outside of bounds, so that they can be
-    # set to 0
-    mask_u = np.logical_or(u_crd < 0, u_crd >= depth.shape[0])
-    mask_v = np.logical_or(v_crd < 0, v_crd >= depth.shape[1])
-    mask_uv = np.logical_not(np.logical_or(mask_u, mask_v))
-    # temporarily clip out of bounds values so that we can use numpy
-    # indexing
-    u_clip = np.clip(u_crd[mask_uv], 0, depth.shape[0] - 1)
-    v_clip = np.clip(v_crd[mask_uv], 0, depth.shape[1] - 1)
+    filtered_points = filter_coords(points, depth.shape)
+    u_clip, v_clip = filtered_points[..., 0], filtered_points[..., 1]
 
     pix_coords = np.stack(
         (
             v_clip,
             u_clip,
-            (depth[..., 0] if depth.ndim == 3 else depth)[u_clip, v_clip],
+            depth[u_clip, v_clip],
         ),
         axis=-1,
     )

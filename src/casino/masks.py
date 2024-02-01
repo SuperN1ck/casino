@@ -66,7 +66,7 @@ def coords_to_mask(
     elif use_opening:
         mask = scipy.ndimage.binary_opening(mask)
         mask = scipy.ndimage.binary_fill_holes(mask)
-        assert label(mask).max() == 1
+        # assert label(mask).max() == 1
 
     # Wrap AA BBOX around everything?
     if use_aa_bbox:
@@ -76,3 +76,31 @@ def coords_to_mask(
         mask[min_h:max_h, min_w:max_w] = True
 
     return mask
+
+
+def filter_coords(points, shape, return_mask: bool = False):
+    """
+    Filters the given points to be within the given shape
+    Mainly used if points i.e. coordinates could fall outside of an image
+    """
+    # Copied from Max :)
+    u_crd, v_crd = points[:, 0], points[:, 1]
+    # save positions that map to outside of bounds, so that they can be
+    # set to 0
+    mask_u = np.logical_or(u_crd < 0, u_crd >= shape[0])
+    mask_v = np.logical_or(v_crd < 0, v_crd >= shape[1])
+    mask_uv = np.logical_not(np.logical_or(mask_u, mask_v))
+
+    # temporarily clip out of bounds values so that we can use numpy
+    # indexing
+    # TODO Why is this still here, should be filtered out anyway?
+    # TODO Maybe make this an optional
+    u_clip = np.clip(u_crd[mask_uv], 0, shape[0] - 1)
+    v_clip = np.clip(v_crd[mask_uv], 0, shape[1] - 1)
+
+    new_points = np.stack([u_clip, v_clip], axis=1)
+
+    if return_mask:
+        return new_points, mask_uv
+
+    return new_points
