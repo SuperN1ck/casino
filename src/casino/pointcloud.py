@@ -91,7 +91,7 @@ def get_points(
     if depth.ndim == 3:
         depth = depth[..., 0]
 
-    filtered_points = filter_coords(points, depth.shape)
+    filtered_points, mask_uv = filter_coords(points, depth.shape, return_mask=True)
     u_clip, v_clip = filtered_points[..., 0], filtered_points[..., 1]
 
     pix_coords = np.stack(
