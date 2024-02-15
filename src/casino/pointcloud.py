@@ -245,8 +245,8 @@ def to_o3d(
     assert pcd.ndim == 2
 
     if filter_invalid:
-        pcd = pcd[~np.isnan(pcd).any(axis=1), :]
-        pcd = pcd[~np.isinf(pcd).any(axis=1), :]
+        invalid_filter = ~np.isnan(pcd).any(axis=1) & ~np.isinf(pcd).any(axis=1)
+        pcd = pcd[invalid_filter, :]
 
     pcd_o3d = o3d.geometry.PointCloud()
     pcd_o3d.points = o3d.utility.Vector3dVector(pcd)
@@ -261,6 +261,8 @@ def to_o3d(
         assert color.ndim == 2
         if color.shape[0] == 1:
             color = np.repeat(color, pcd.shape[0], axis=0)
+        elif filter_invalid:
+            color = color[invalid_filter, :]
         pcd_o3d.colors = o3d.utility.Vector3dVector(color)
 
     return pcd_o3d
