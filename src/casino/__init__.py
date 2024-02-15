@@ -20,6 +20,7 @@ from . import (
     dataclasses,
     experiments,
     geometry,
+    hardware,
     latents,
     learning,
     masks,
@@ -50,4 +51,5 @@ __all__ = [
     "math",
     "user",
     "masks",
+    "hardware",
 ]
