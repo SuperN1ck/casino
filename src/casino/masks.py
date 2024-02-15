@@ -18,6 +18,12 @@ except:
     logging.debug("open-cv not availble. Most functionality in masks.py will break.")
 
 
+try:
+    from PIL import Image
+except:
+    logging.debug("PIL not availble. Some functionality in masks.py will break.")
+
+
 def mask_to_coords(mask: "np.ndarray"):
     """
     Returns the pixel coordinates of a mask
@@ -104,3 +110,53 @@ def filter_coords(points, shape, return_mask: bool = False):
         return new_points, mask_uv
 
     return new_points
+
+
+def equal_max_bbox(masks: "np.ndarray"):
+    assert masks.ndim == 3
+    N_masks, H, W = masks.shape
+
+    # coordinates: left, upper, right, lower
+    all_bboxes = np.array([Image.fromarray(mask).getbbox() for mask in masks])
+    all_widths = all_bboxes[:, 2] - all_bboxes[:, 0]
+    all_heights = all_bboxes[:, 3] - all_bboxes[:, 1]
+    all_centers = np.array(
+        [all_bboxes[:, 0] + all_widths / 2, all_bboxes[:, 1] + all_heights / 2]
+    ).T
+
+    max_width = all_widths.max()
+    max_height = all_heights.max()
+
+    new_bboxes = np.ceil(
+        np.array(
+            [
+                all_centers[:, 0] - max_width / 2,
+                all_centers[:, 1] - max_height / 2,
+                all_centers[:, 0] + max_width / 2,
+                all_centers[:, 1] + max_height / 2,
+            ]
+        ).T
+    ).astype(np.uint16)
+    # TODO This needs logic for handling cases where the new bboundig box would be too big/small
+
+    new_masks = np.zeros_like(masks, dtype=bool)
+    for bbox_idx, new_bbox in enumerate(new_bboxes):
+        new_masks[bbox_idx, new_bbox[1] : new_bbox[3], new_bbox[0] : new_bbox[2]] = True
+    return new_masks
+
+
+def mask_center_bbox(mask: "np.ndarray"):
+    return np.median(mask_to_coords(mask), axis=0).astype(int)
+
+
+def mask_center_geometric(mask: "np.ndarray"):
+    return np.mean(mask_to_coords(mask), axis=0).astype(int)
+
+def mask_top_left_bbox(mask: "np.ndarray"):
+    return np.min(mask_to_coords(mask), axis=0).astype(int)
+
+def get_segment_crop(img, mask):
+    assert img.ndim == 2 or img.ndim == 3
+    assert mask.ndim == 2
+    return img[np.ix_(mask.any(1), mask.any(0))]
+
