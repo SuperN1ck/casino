@@ -76,10 +76,7 @@ def coords_to_mask(
 
     # Wrap AA BBOX around everything?
     if use_aa_bbox:
-        new_coords = mask_to_coords(mask)
-        min_h, min_w = new_coords.min(axis=0)
-        max_h, max_w = new_coords.max(axis=0)
-        mask[min_h:max_h, min_w:max_w] = True
+        mask = make_mask_aa_bbox(mask)
 
     return mask
 
@@ -110,6 +107,17 @@ def filter_coords(points, shape, return_mask: bool = False):
         return new_points, mask_uv
 
     return new_points
+
+
+def make_mask_aa_bbox(mask):
+    """
+    Inplace!
+    """
+    new_coords = mask_to_coords(mask)
+    min_h, min_w = new_coords.min(axis=0)
+    max_h, max_w = new_coords.max(axis=0)
+    mask[min_h:max_h, min_w:max_w] = True
+    return mask
 
 
 def equal_max_bbox(masks: "np.ndarray"):
@@ -152,11 +160,12 @@ def mask_center_bbox(mask: "np.ndarray"):
 def mask_center_geometric(mask: "np.ndarray"):
     return np.mean(mask_to_coords(mask), axis=0).astype(int)
 
+
 def mask_top_left_bbox(mask: "np.ndarray"):
     return np.min(mask_to_coords(mask), axis=0).astype(int)
+
 
 def get_segment_crop(img, mask):
     assert img.ndim == 2 or img.ndim == 3
     assert mask.ndim == 2
     return img[np.ix_(mask.any(1), mask.any(0))]
-
