@@ -113,6 +113,10 @@ def filter_coords(points, shape, return_mask: bool = False):
 
 
 def equal_max_bbox(masks: "np.ndarray"):
+    single_mask = masks.ndim == 2
+    if single_mask:
+        masks = masks.copy()[None, ...]
+
     assert masks.ndim == 3
     N_masks, H, W = masks.shape
 
@@ -142,7 +146,7 @@ def equal_max_bbox(masks: "np.ndarray"):
     new_masks = np.zeros_like(masks, dtype=bool)
     for bbox_idx, new_bbox in enumerate(new_bboxes):
         new_masks[bbox_idx, new_bbox[1] : new_bbox[3], new_bbox[0] : new_bbox[2]] = True
-    return new_masks
+    return new_masks if not single_mask else new_masks[0]
 
 
 def mask_center_bbox(mask: "np.ndarray"):
@@ -152,11 +156,12 @@ def mask_center_bbox(mask: "np.ndarray"):
 def mask_center_geometric(mask: "np.ndarray"):
     return np.mean(mask_to_coords(mask), axis=0).astype(int)
 
+
 def mask_top_left_bbox(mask: "np.ndarray"):
     return np.min(mask_to_coords(mask), axis=0).astype(int)
+
 
 def get_segment_crop(img, mask):
     assert img.ndim == 2 or img.ndim == 3
     assert mask.ndim == 2
     return img[np.ix_(mask.any(1), mask.any(0))]
-
