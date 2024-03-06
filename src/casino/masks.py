@@ -129,13 +129,25 @@ def equal_max_bbox(masks: "np.ndarray"):
     max_width = all_widths.max()
     max_height = all_heights.max()
 
+    new_x_neg = all_centers[:, 0] - max_width / 2
+    new_y_neg = all_centers[:, 1] - max_height / 2
+    new_x_pos = all_centers[:, 0] + max_width / 2
+    new_y_pos = all_centers[:, 1] + max_height / 2
+
+    x_offset = 0
+    x_offset = np.where(new_x_neg < 0.0, -new_x_neg, x_offset)
+    x_offset = np.where(new_x_pos >= W, W - new_x_pos, x_offset)
+    y_offset = 0
+    y_offset = np.where(new_y_neg < 0.0, -new_y_neg, y_offset)
+    y_offset = np.where(new_y_pos >= H, H - new_y_pos, y_offset)
+
     new_bboxes = np.ceil(
         np.array(
             [
-                all_centers[:, 0] - max_width / 2,
-                all_centers[:, 1] - max_height / 2,
-                all_centers[:, 0] + max_width / 2,
-                all_centers[:, 1] + max_height / 2,
+                new_x_neg + x_offset,
+                new_y_neg + y_offset,
+                new_x_pos + x_offset,
+                new_y_pos + y_offset,
             ]
         ).T
     ).astype(np.uint16)
