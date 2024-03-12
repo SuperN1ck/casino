@@ -3,8 +3,16 @@ try:
 except:
     import logging
 
-    logging.debug("numpy not availble. Most functionality in latents.py will break")
+    logging.debug("numpy not availble. Most functionality in geometry.py will break")
     np.zeros = [0, 0]
+
+try:
+    from scipy.linalg import orthogonal_procrustes
+except:
+    import logging
+
+    logging.debug("scipy not availble. Most functionality in geometry.py will break")
+
 
 from typing import List, Union
 
@@ -49,3 +57,10 @@ def to_transformation_matrix(
     trans[:3, :3] = R.copy()
     trans[:3, 3] = t.copy()
     return trans
+
+
+def ensure_valid_rotation(R: Union["np.ndarray", List[List[float]]]):
+    R = np.array(R)
+
+    R_updated, sca = orthogonal_procrustes(np.eye(3), R)
+    return R_updated
