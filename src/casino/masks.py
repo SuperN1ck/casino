@@ -121,6 +121,10 @@ def make_mask_aa_bbox(mask):
 
 
 def equal_max_bbox(masks: "np.ndarray"):
+    single_mask = masks.ndim == 2
+    if single_mask:
+        masks = masks.copy()[None, ...]
+
     assert masks.ndim == 3
     N_masks, H, W = masks.shape
 
@@ -135,13 +139,25 @@ def equal_max_bbox(masks: "np.ndarray"):
     max_width = all_widths.max()
     max_height = all_heights.max()
 
+    new_x_neg = all_centers[:, 0] - max_width / 2
+    new_y_neg = all_centers[:, 1] - max_height / 2
+    new_x_pos = all_centers[:, 0] + max_width / 2
+    new_y_pos = all_centers[:, 1] + max_height / 2
+
+    x_offset = 0
+    x_offset = np.where(new_x_neg < 0.0, -new_x_neg, x_offset)
+    x_offset = np.where(new_x_pos >= W, W - new_x_pos, x_offset)
+    y_offset = 0
+    y_offset = np.where(new_y_neg < 0.0, -new_y_neg, y_offset)
+    y_offset = np.where(new_y_pos >= H, H - new_y_pos, y_offset)
+
     new_bboxes = np.ceil(
         np.array(
             [
-                all_centers[:, 0] - max_width / 2,
-                all_centers[:, 1] - max_height / 2,
-                all_centers[:, 0] + max_width / 2,
-                all_centers[:, 1] + max_height / 2,
+                new_x_neg + x_offset,
+                new_y_neg + y_offset,
+                new_x_pos + x_offset,
+                new_y_pos + y_offset,
             ]
         ).T
     ).astype(np.uint16)
@@ -150,7 +166,17 @@ def equal_max_bbox(masks: "np.ndarray"):
     new_masks = np.zeros_like(masks, dtype=bool)
     for bbox_idx, new_bbox in enumerate(new_bboxes):
         new_masks[bbox_idx, new_bbox[1] : new_bbox[3], new_bbox[0] : new_bbox[2]] = True
-    return new_masks
+    return new_masks if not single_mask else new_masks[0]
+
+
+def mask_bbox(mask: "np.ndarray"):
+    """
+    Returns bbox in left, upper, right, lower format
+    """
+    new_coords = mask_to_coords(mask)
+    min_h, min_w = new_coords.min(axis=0)
+    max_h, max_w = new_coords.max(axis=0)
+    return min_h, min_w, max_h, max_w
 
 
 def mask_center_bbox(mask: "np.ndarray"):
