@@ -76,8 +76,7 @@ def coords_to_mask(
 
     # Wrap AA BBOX around everything?
     if use_aa_bbox:
-        min_h, min_w, max_h, max_w = mask_bbox(mask)
-        mask[min_h:max_h, min_w:max_w] = True
+        mask = make_mask_aa_bbox(mask)
 
     return mask
 
@@ -108,6 +107,17 @@ def filter_coords(points, shape, return_mask: bool = False):
         return new_points, mask_uv
 
     return new_points
+
+
+def make_mask_aa_bbox(mask):
+    """
+    Inplace!
+    """
+    new_coords = mask_to_coords(mask)
+    min_h, min_w = new_coords.min(axis=0)
+    max_h, max_w = new_coords.max(axis=0)
+    mask[min_h:max_h, min_w:max_w] = True
+    return mask
 
 
 def equal_max_bbox(masks: "np.ndarray"):
