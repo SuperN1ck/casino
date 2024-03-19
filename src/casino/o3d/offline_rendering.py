@@ -35,9 +35,7 @@ except:
     )
 
 
-from .visualization import get_o3d_coordinate_frame
-
-# TODO Copied from CARTO repo; should be put in casino eventually
+from ..visualization import get_o3d_coordinate_frame
 
 
 def get_o3d_render(
