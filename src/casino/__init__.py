@@ -30,7 +30,9 @@ from . import (
     special_dicts,
     visualization,
     math,
+    images,
     user,
+    o3d,
 )
 from .ColorMap2D import ColorMap2D
 
@@ -48,8 +50,10 @@ __all__ = [
     "ColorMap2D",
     "latents",
     "geometry",
+    "images",
     "math",
     "user",
     "masks",
     "hardware",
+    "o3d",
 ]
