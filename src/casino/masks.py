@@ -120,7 +120,7 @@ def make_mask_aa_bbox(mask):
     return mask
 
 
-def equal_max_bbox(masks: "np.ndarray"):
+def equal_max_bbox(masks: "np.ndarray", multiplier: float = 1.0):
     single_mask = masks.ndim == 2
     if single_mask:
         masks = masks.copy()[None, ...]
@@ -136,8 +136,8 @@ def equal_max_bbox(masks: "np.ndarray"):
         [all_bboxes[:, 0] + all_widths / 2, all_bboxes[:, 1] + all_heights / 2]
     ).T
 
-    max_width = all_widths.max()
-    max_height = all_heights.max()
+    max_width = all_widths.max() * multiplier
+    max_height = all_heights.max() * multiplier
 
     new_x_neg = all_centers[:, 0] - max_width / 2
     new_y_neg = all_centers[:, 1] - max_height / 2
