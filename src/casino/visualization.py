@@ -1,10 +1,10 @@
 from typing import Optional
+import logging
+
 
 try:
     import open3d as o3d
 except:
-    import logging
-
     logging.debug(
         "open3d not availble. Some functionality in visualization.py will break"
     )
@@ -12,8 +12,6 @@ except:
 try:
     import numpy as np
 except:
-    import logging
-
     logging.debug(
         "numpy not availble. Some functionality in visualization.py will break"
     )

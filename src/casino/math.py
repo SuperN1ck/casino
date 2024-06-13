@@ -1,11 +1,11 @@
+import logging
+
 try:
     import numpy as np
 except:
-    import logging
-
     logging.debug("numpy not availble. Most functionality in math.py will break")
 
-from typing import Union, List
+from typing import List, Union
 
 
 def within_range(

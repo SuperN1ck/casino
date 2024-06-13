@@ -1,16 +1,16 @@
 # Credits go to: https://stackoverflow.com/questions/15207255/is-there-any-way-to-use-bivariate-colormaps-in-matplotlib/68981516#68981516
 
+import logging
 from typing import Tuple
+
 from casino import DATA_DIR
 
 CMAP_DIR = DATA_DIR / "ColorMaps2D"
 
 try:
-    import numpy as np
     import matplotlib.pyplot as plt
+    import numpy as np
 except:
-    import logging
-
     logging.debug("numpy not availble. All functionality in ColoMap2D.py will break")
 
 _AVAILABLE_COLOR_MAPS = [cmap_file.stem for cmap_file in CMAP_DIR.glob("*.png")]

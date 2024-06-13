@@ -1,6 +1,7 @@
+import logging
 import operator
-from typing import Dict
 from collections import OrderedDict
+from typing import Dict
 
 try:
     import numpy as np

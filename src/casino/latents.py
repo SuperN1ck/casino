@@ -1,8 +1,8 @@
+import logging
+
 try:
     import numpy as np
 except:
-    import logging
-
     logging.debug("numpy not availble. Most functionality in latents.py will break")
 
 

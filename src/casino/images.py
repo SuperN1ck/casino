@@ -11,11 +11,15 @@ except:
 try:
     from PIL import Image
 except:
+    import logging
+
     logging.debug("PIl not availble. Most functionality in images.py will break.")
 
 try:
     import cv2
 except:
+    import logging
+
     logging.debug("cv2 not availble. Most functionality in images.py will break.")
 
 
