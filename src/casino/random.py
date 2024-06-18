@@ -11,6 +11,7 @@ def set_seed(seed: int):
         import torch
 
         torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
     except:
         pass
 
