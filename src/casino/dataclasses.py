@@ -83,5 +83,20 @@ def transform_dict(config_dict: Dict, expand: bool = True) -> Dict:
     return ret
 
 
-def transform_dataclass(config_class: Any, expand: bool = True) -> Dict:
+def transform_dataclass(
+    config_dataclass: dataclasses.dataclass, expand: bool = True
+) -> Dict:
+    """
+    General function to transform any dataclass into wandb config acceptable format
+    (This is mostly due to datatypes that are not able to fit into YAML format which makes wandb angry)
+    The expand argument is used to expand iterables into dictionaries so that these configs can be used when compare across runs
+
+    """
+    return transform_dict(dataclasses.asdict(config_dataclass), expand=expand)
+
+
+def transform_dataclass(
+    config_class: dataclasses.dataclass, expand: bool = True
+) -> Dict:
+    assert dataclasses.is_dataclass(config_class)
     return transform_dict(dataclasses.asdict(config_class), expand=expand)
