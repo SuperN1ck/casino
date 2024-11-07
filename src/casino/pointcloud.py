@@ -17,6 +17,10 @@ except:
     )
 
 
+def degree_to_focal_length(degrees):
+    return (1.0 / np.tan(np.deg2rad(degrees) / 2)) / 2.0
+
+
 class Intrinsics:
     def __init__(
         self: "Intrinsics",
