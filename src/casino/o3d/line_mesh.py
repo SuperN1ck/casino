@@ -12,11 +12,20 @@ License: MIT
 
 """
 
-import numpy as np
-import open3d as o3d
+import logging
+
+try:
+    import numpy as np
+except:
+    logging.debug("numpy not availble. line_mesh.py will break")
+
+try:
+    import open3d as o3d
+except:
+    logging.debug("open3d not availble. line_mesh.py will break")
 
 
-def align_vector_to_another(a=np.array([0, 0, 1]), b=np.array([1, 0, 0])):
+def align_vector_to_another(a: "np.array" = [0, 0, 1], b: "np.array" = [1, 0, 0]):
     """
     Aligns vector a to vector b with axis angle rotation
     """

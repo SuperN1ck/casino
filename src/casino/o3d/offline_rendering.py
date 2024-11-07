@@ -35,7 +35,7 @@ except:
     )
 
 
-from ..visualization import get_o3d_coordinate_frame
+from .misc import get_o3d_coordinate_frame
 
 
 def get_o3d_render(
@@ -69,8 +69,8 @@ def get_o3d_render(
 
 
 def render_o3d_mesh(
-    all_pcd: Tuple[o3d.geometry.PointCloud, List[o3d.geometry.PointCloud]],
-    renderer: o3d.visualization.rendering.OffscreenRenderer,
+    all_pcd: Tuple["o3d.geometry.PointCloud", List["o3d.geometry.PointCloud"]],
+    renderer: "o3d.visualization.rendering.OffscreenRenderer",
     height_coloring=False,
     frame_width=1200,
     frame_height=1200,
@@ -127,8 +127,8 @@ def render_o3d_mesh(
 
 
 def render_rotate_around_o3d_meshes(
-    all_pcds: Tuple[o3d.geometry.PointCloud, List[o3d.geometry.PointCloud]],
-    renderer: o3d.visualization.rendering.OffscreenRenderer,
+    all_pcds: Tuple["o3d.geometry.PointCloud", List["o3d.geometry.PointCloud"]],
+    renderer: "o3d.visualization.rendering.OffscreenRenderer",
     fps: float = 10,
     duration: float = 2,
     rotation_center: Optional[Union[List[float], "np.ndarray"]] = None,
