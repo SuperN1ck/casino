@@ -33,6 +33,7 @@ from . import (
     images,
     user,
     o3d,
+    torch_utils,
 )
 from .ColorMap2D import ColorMap2D
 
@@ -56,4 +57,5 @@ __all__ = [
     "masks",
     "hardware",
     "o3d",
+    "torch_utils",
 ]
