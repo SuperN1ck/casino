@@ -22,8 +22,12 @@ class AccumulatorDict(dict):
     def __init__(self, *args, accumulator=operator.add, **kwargs):
         self.accumulator = accumulator
         self.update(*args, **kwargs)
+        self.steps: int = 0
 
-    def increment(self, key, val):
+    def increment_step(self):
+        self.steps += 1
+
+    def increment(self, key, val, increment_steps: bool = False):
         """
         This will increment the value for a given key
         """
@@ -31,9 +35,15 @@ class AccumulatorDict(dict):
             val = self.accumulator(dict.__getitem__(self, key), val)
         dict.__setitem__(self, key, val)
 
-    def increment_dict(self, other: Dict):
+        if increment_steps:
+            self.increment_step()
+
+    def increment_dict(self, other: Dict, increment_steps: bool = True):
         for key, value in other.items():
             self.increment(key, value)
+
+        if increment_steps:
+            self.increment_step()
 
     def as_default_dict(self):
         """
