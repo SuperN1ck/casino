@@ -2,6 +2,18 @@ from typing import List, Union, Optional
 import pathlib
 
 try:
+    import cv2
+
+    # import os
+
+    # os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH")
+except:
+    import logging
+
+    logging.debug("cv2 not availble. Most functionality in images.py will break.")
+
+
+try:
     import numpy as np
 except:
     import logging
@@ -14,13 +26,6 @@ except:
     import logging
 
     logging.debug("PIl not availble. Most functionality in images.py will break.")
-
-try:
-    import cv2
-except:
-    import logging
-
-    logging.debug("cv2 not availble. Most functionality in images.py will break.")
 
 
 def save_images_to_gif(
@@ -62,13 +67,24 @@ def save_images_to_mp4(
     if fps is None:
         fps = len(images) / duration
 
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+
     width, height, _ = images[0].shape
     video = cv2.VideoWriter(
-        filename=str(output_path), fourcc=0, fps=fps, frameSize=(height, width)
+        filename=str(output_path), fourcc=fourcc, fps=fps, frameSize=(height, width)
     )
 
     for image in images:
-        video.write(cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+        # opencv expects BGR format --> convert RGB to BGR
+        image = np.flip(image, axis=-1)  # Convert RGB to BGR
 
-    cv2.destroyAllWindows()
+        # opencv expects uint8 images
+        if image.dtype != np.uint8:
+            image = (image * 255).astype(np.uint8)
+        assert image.dtype == np.uint8, "Image dtype must be uint8"
+
+
+        video.write(image)
+
+    # cv2.destroyAllWindows()
     video.release()
