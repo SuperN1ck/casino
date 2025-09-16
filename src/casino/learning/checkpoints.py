@@ -1,6 +1,6 @@
 import logging
 import pathlib
-from typing import Any, Tuple, Union
+from typing import Any, Tuple, Union, Dict
 
 try:
     import torch
@@ -16,7 +16,8 @@ def save_torch_checkpoint(
     current_epoch: bool = False,
     latest: bool = True,
     best: bool = False,
-    prefix : str = ""
+    prefix: str = "",
+    extras: Dict[str, Any] = {},
 ):
     if not isinstance(experiment_directory, pathlib.Path):
         experiment_directory = pathlib.Path(experiment_directory)
@@ -37,22 +38,34 @@ def save_torch_checkpoint(
                 "model_parameters": model.state_dict(),
                 "optimizer_parameters": optimizer.state_dict(),
                 "epoch": epoch,
+                "extras": {**extras},
             },
             experiment_directory / (ckpt_name + ".ckpt"),
         )
 
 
 def load_torch_checkpoint(
-    experiment_directory: Union[pathlib.Path, Any], ckpt_name: str = "best"
+    experiment_directory: Union[pathlib.Path, Any],
+    ckpt_name: str = "best",
+    info: bool = False,
+    **kwargs: Any,
 ) -> Tuple["torch.nn.Module", "torch.optim.Optimizer", int]:
     if not isinstance(experiment_directory, pathlib.Path):
         experiment_directory = pathlib.Path(experiment_directory)
     experiment_directory /= "checkpoints"
-    checkpoint_dict = torch.load(
-        experiment_directory / (ckpt_name + ".ckpt"),
-    )
-    return (
+    ckpt_path = experiment_directory / (ckpt_name + ".ckpt")
+    if info:
+        logging.info(f"Loading checkpoint from {ckpt_path}")
+
+    checkpoint_dict = torch.load(experiment_directory / (ckpt_name + ".ckpt"), **kwargs)
+
+    return_values = (
         checkpoint_dict["model_parameters"],
         checkpoint_dict["optimizer_parameters"],
         checkpoint_dict["epoch"],
     )
+
+    if "extras" not in checkpoint_dict:
+        return return_values
+
+    return return_values + (checkpoint_dict["extras"],)
