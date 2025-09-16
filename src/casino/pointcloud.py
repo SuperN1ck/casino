@@ -310,6 +310,36 @@ def subsample_th(pointcloud: "torch.Tensor", n_points: int, sample_dim: int = -2
     return og_size_sampled_pc
 
 
+def crop_mask_aabb(point_cloud: "np.ndarray", aabb: "np.ndarray"):
+    """
+    Extracts the mask for points in an axis-aligned bounding box
+    We assume the bounding box is given in the format of
+    [[-x, x],
+     [-y, y],
+     [-z, z]]
+
+    returns a view of the original points
+    """
+    # Logical conditions for each axis
+    mask = (
+        (point_cloud[..., 0] >= aabb[0, 0])
+        & (point_cloud[..., 0] <= aabb[0, 1])  # X-axis
+        & (point_cloud[..., 1] >= aabb[1, 0])
+        & (point_cloud[..., 1] <= aabb[1, 1])  # Y-axis
+        & (point_cloud[..., 2] >= aabb[2, 0])
+        & (point_cloud[..., 2] <= aabb[2, 1])  # Z-axis
+    )
+    return mask
+
+
+def crop_aabb(point_cloud: "np.ndarray", aabb: "np.ndarray", in_place: bool = True):
+    mask = crop_mask_aabb(point_cloud, aabb)
+    if not in_place:
+        point_cloud = point_cloud.copy()
+    # Apply the mask to filter points
+    return point_cloud[mask]
+
+
 def to_o3d(
     pcd: "np.ndarray", color: "np.ndarray" = None, filter_invalid: bool = True
 ) -> "o3d.geometry.PointCloud":
