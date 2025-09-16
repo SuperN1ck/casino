@@ -59,7 +59,7 @@ def transform_dict(config_dict: Dict, expand: bool = True) -> Dict:
     (This is mostly due to datatypes that are not able to fit into YAML format which makes wandb angry)
     The expand argument is used to expand iterables into dictionaries so that these configs can be used when compare across runs
 
-    Shamelessly stolen from Brent
+    Shamelessly stolen from Brent: https://github.com/brentyi
     """
     ret: Dict[str, Any] = {}
     for k, v in config_dict.items():
