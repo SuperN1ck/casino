@@ -261,6 +261,55 @@ def subsample(point_cloud: "np.ndarray", n_points: int, dim: int = 0):
         return point_cloud[:, idx]
 
 
+def subsample_th(pointcloud: "torch.Tensor", n_points: int, sample_dim: int = -2):
+    """
+    Uniformly subsamples a pointcloud to `n_points` along the `sample_dim`.
+    Indices are shuffled for each batch entry.
+
+    Assumes the shape of
+        N x 3
+    or
+        3 x N
+    or
+        B_1 x ... x B_b x N x 3
+    or
+        B_1 x ... x B_b x 3 x N
+
+    sample_dim defines the dimesions along which we sample
+        - should be -1 or -2
+        - default (sample_dim=-2) is assuming N x 3
+    """
+    og_tensor_shape = list(pointcloud.size())
+
+    # Flat away all batch dimensions
+    flat_pc = (
+        pointcloud.flatten(0, -3)
+        if len(og_tensor_shape) > 2
+        else pointcloud.unsqueeze(0)
+    )
+
+    B = flat_pc.size(0)
+    in_n_points = flat_pc.size(sample_dim)
+
+    # For each entry create
+    indices = [torch.randperm(in_n_points)[:n_points] for _ in range(B)]
+    stacked_indices = torch.stack(indices, dim=0).to(flat_pc.device)
+
+    if sample_dim in [-2, 1]:
+        stacked_indices = stacked_indices.unsqueeze(-1).expand(-1, -1, 3)
+    elif sample_dim in [-1, 2]:
+        stacked_indices = stacked_indices.unsqueeze(-2).expand(-1, 3, -1)
+    else:
+        raise NotImplementedError(f"Unknown {sample_dim = }")
+
+    sampled_pc = torch.gather(flat_pc, dim=sample_dim, index=stacked_indices)
+
+    # Overwrite original point amount with new size
+    og_tensor_shape[sample_dim] = n_points
+    og_size_sampled_pc = sampled_pc.reshape(og_tensor_shape)
+    return og_size_sampled_pc
+
+
 def to_o3d(
     pcd: "np.ndarray", color: "np.ndarray" = None, filter_invalid: bool = True
 ) -> "o3d.geometry.PointCloud":
