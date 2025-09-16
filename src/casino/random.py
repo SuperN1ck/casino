@@ -1,6 +1,15 @@
 import random
 import os
 
+from typing import Union, List, Optional
+
+try:
+    import numpy as np
+except ImportError:
+    import logging
+
+    logging.debug("numpy not available. Some functionality in random.py will break")
+
 
 def set_seed(seed: int, torch_deterministic: bool = False):
     """
@@ -35,3 +44,32 @@ def set_seed(seed: int, torch_deterministic: bool = False):
         np.random.seed(seed)
     except:
         pass
+
+
+def sample_in_circle(
+    inner_radius: float = 0.0,
+    outer_radius: float = 1.0,
+    center: Union[List, "np.ndarray"] = [0.0, 0.0],
+    n: int = 1,
+    rng: Optional["np.random.Generator"] = None,
+) -> "np.ndarray":
+    """
+    Samples points uniformly in a circle with given inner and outer radius and center.
+    """
+    # TODO [NH] 2025/06/11: Extend this to higher-dimensional cases, e.g. by using hyperspheres or spherical coordinates.
+    if center is None:
+        center = [0.0, 0.0]
+    center = np.array(center)
+
+    assert center.shape == (2,)
+
+    if rng is None:
+        rng = np.random.default_rng()
+
+    angles = rng.uniform(0, 2 * np.pi, n)
+    r = rng.uniform(inner_radius, outer_radius, n)
+
+    x = r * np.cos(angles) + center[0]
+    y = r * np.sin(angles) + center[1]
+
+    return np.column_stack((x, y))
