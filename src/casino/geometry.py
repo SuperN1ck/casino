@@ -1,4 +1,4 @@
-from typing import Union, Tuple, List
+from typing import Union, Tuple, List, Optional, Iterable
 
 try:
     import numpy as np
@@ -64,7 +64,7 @@ def to_transformation_matrix(
 
     B = t.shape[:-1]  # Extract batch
 
-    trans = batched_eye_np(B, 4)
+    trans = batched_eye_np(B, 4, dtype=t.dtype)
     trans[..., :3, :3] = R.copy() if copy else R
     trans[..., :3, 3] = t.copy() if copy else t
     return trans
@@ -103,7 +103,7 @@ def ensure_valid_rotation(R: Union["np.ndarray", List[List[float]]]):
     return R_updated
 
 
-def batched_eye_np(B: int, N: int, **kwargs):
+def batched_eye_np(B: Union[int, Iterable[int]], N: int, **kwargs):
     if isinstance(B, int):
         B = (B,)
     batch_dims = (1,) * len(B)
@@ -119,7 +119,7 @@ def batched_eye_np(B: int, N: int, **kwargs):
     )
 
 
-def batched_eye_th(B: Union[int, Tuple[int]], N: int, **kwargs):
+def batched_eye_th(B: Union[int, Iterable[int]], N: int, **kwargs):
     if isinstance(B, int):
         B = (B,)
     batch_dims = (1,) * len(B)
@@ -147,3 +147,109 @@ def vec_projection_th(v: "torch.Tensor", e: "torch.Tensor") -> "torch.Tensor":
     """Project vector v onto unit vector e."""
     proj = torch.sum(v * e, dim=-1, keepdim=True) * e
     return proj
+
+
+def axisangle2quat_np(vec):
+    """
+    Copied from robosuite but extedned to batches
+
+    Converts scaled axis-angle to quat.
+
+    Args:
+        vec (np.array): (ax,ay,az) axis-angle exponential coordinates
+
+    Returns:
+        np.array: (x,y,z,w) vec4 float angles
+    """
+    # Grab angles
+    angles = np.linalg.norm(vec, axis=-1, keepdims=True)
+
+    # make sure that axis is a unit vector
+    axis = vec / angles
+
+    q = np.zeros((*vec.shape[:-1], 4))
+    q[..., 3] = np.cos(angles / 2.0).squeeze(-1)  # Remove last dimension
+    q[..., :3] = axis * np.sin(angles / 2.0)
+
+    # handle zero-rotation case
+    return np.where(
+        ~np.isclose(angles, 0.0),
+        q,  # If we are not close to 0, we will use our calculated quaternions
+        np.array([0.0, 0.0, 0.0, 1.0]),  # If the angle is close we will use unit quat
+    )
+
+
+def linear_interpolate_np(
+    start: Union["np.ndarray", List[float]],
+    end: Union["np.ndarray", List[float]],
+    alphas: Optional[Union["np.ndarray", List[float]]] = None,
+    steps: Optional[int] = None,
+) -> Union["np.ndarray", List[float]]:
+    """
+    Linearly interpolate between points.
+    Args:
+        start (Union[np.ndarray, List[float]]): Starting point.
+        end (Union[np.ndarray, List[float]]): Ending point.
+        alpha (Union[np.ndarray, List[float]]): Interpolation factor(s) (0.0 to 1.0).
+    Returns:
+        interpolated (Union[np.ndarray, List[float]]): Interpolated point.
+    """
+    start = np.array(start)
+    end = np.array(end)
+    assert start.shape == end.shape, "Start and end must have the same shape."
+    assert (alphas is not None) or (
+        steps is not None
+    ), "Either alpha or steps must be provided."
+
+    if alphas is None:
+        assert steps is not None, "Steps must be provided if alpha is None."
+        alphas = np.linspace(0, 1, steps).reshape((-1,) + (1,) * (start.ndim))
+
+    return _linear_interpolate(
+        start=start[np.newaxis, ...], end=end[np.newaxis, ...], alphas=alphas
+    )
+
+
+def linear_interpolate_th(
+    start: Union["torch.Tensor"],
+    end: Union["torch.Tensor"],
+    alphas: Optional[Union["torch.Tensor", List[float]]] = None,
+    steps: Optional[int] = None,
+) -> Union["torch.Tensor", List[float]]:
+    """
+    If using steps, this function will linearly interpolate between points along the first dimension.
+    Consider permuting or reshaping the tensor to fit your needs.
+
+    Please consider reshaping your tensors to have a time dimension and directly passing alphas
+        if you want to interpolate along that.
+
+    Args:
+        start (Union[torch.Tensor]): Starting point.
+        end (Union[torch.Tensor]): Ending point.
+        alpha (Union[torch.Tensor, List[float]]): Interpolation factor(s) (0.0 to 1.0).
+    Returns:
+        interpolated (Union[torch.Tensor, List[float]]): Interpolated point.
+    """
+    assert start.shape == end.shape, "Start and end must have the same shape."
+    assert (alphas is not None) or (
+        steps is not None
+    ), "Either alpha or steps must be provided."
+
+    if alphas is None:
+        assert steps is not None, "Steps must be provided if alpha is None."
+        alphas = torch.linspace(0, 1, steps).view((-1,) + (1,) * (start.ndim))
+
+    alphas = alphas.to(start.device, dtype=start.dtype)
+
+    return _linear_interpolate(
+        start=start.unsqueeze(0), end=end.unsqueeze(0), alphas=alphas
+    )
+
+
+def _linear_interpolate(
+    start: Union["np.ndarray", "torch.Tensor"],
+    end: Union["np.ndarray", "torch.Tensor"],
+    alphas: Optional[Union["np.ndarray", "torch.Tensor"]] = None,
+) -> Union["np.ndarray", "torch.Tensor"]:
+
+    return (1 - alphas) * start + alphas * end
