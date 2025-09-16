@@ -35,3 +35,6 @@ def default_init_torch(module: "torch.nn.Module"):
     ):
         module.weight.data.fill_(1)
         module.bias.data.zero_()
+    elif isinstance(module, torch.nn.Embedding):
+        module.weight.data.normal_(mean=0.0, std=1.0)
+        module.weight.data /= module.weight.data.norm(p=2, dim=1, keepdim=True)
