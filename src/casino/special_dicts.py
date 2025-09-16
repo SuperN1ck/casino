@@ -40,7 +40,21 @@ class AccumulatorDict(dict):
 
     def increment_dict(self, other: Dict, increment_steps: bool = True):
         for key, value in other.items():
-            self.increment(key, value)
+            # Handle the case for nested dicts
+            if isinstance(value, Mapping):
+                if dict.__contains__(self, key):
+                    old_dict = dict.__getitem__(self, key)
+                    if not isinstance(old_dict, AccumulatorDict):
+                        old_dict = AccumulatorDict(old_dict)
+                    # This performs the operation in-place
+                    # TODO: Is there a clever way to verify this?
+                    old_dict.increment_dict(value)
+                else:
+                    if not isinstance(value, AccumulatorDict):
+                        value = AccumulatorDict(value)
+                    dict.__setitem__(self, key, value)
+            else:
+                self.increment(key, value)
 
         if increment_steps:
             self.increment_step()
