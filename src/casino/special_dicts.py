@@ -67,17 +67,27 @@ class IndexDict(dict):
     This will incrementally count up for unseen keys
     """
 
+    freeze = False  # If True, the dict will not allow new keys to be added
+
     def __init__(self, counter_start: int = 0, *args, **kwargs):
         self.counter = counter_start
         self.update(*args, **kwargs)
 
     def __getitem__(self, key):
+        # TODO [NH] 2025/06/04: Enable this?
+        # If passing e.g. torch.Tensor, multiple tensor elements, or other non-hashable types,
+        # we need to convert the key to a common representation
+        # key = repr(key)
         if dict.__contains__(self, key):
             val = dict.__getitem__(self, key)
-        else:
+        elif not self.freeze:
             val = self.counter
             dict.__setitem__(self, key, val)
             self.counter += 1
+        else:
+            raise KeyError(
+                f"Key '{key}' not found in IndexDict and freeze is set to True."
+            )
         return val
 
     # def __setitem__(self, key, val):
