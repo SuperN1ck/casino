@@ -1,7 +1,8 @@
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 from .masks import filter_coords
+from .special_dicts import deindex
 
 try:
     import numpy as np
@@ -14,6 +15,14 @@ try:
 except:
     logging.debug(
         "open3d not available. Some functionality in pointcloud.py will break."
+    )
+
+
+try:
+    import torch
+except:
+    logging.debug(
+        "torch not available. Some functionality in pointcloud.py will break."
     )
 
 
@@ -57,7 +66,9 @@ class Intrinsics:
         )
 
 
-def get_ordered(uvd: "np.ndarray", intrinsics: Intrinsics) -> "np.ndarray":
+def get_ordered(
+    uvd: "np.ndarray", intrinsics: Union[Intrinsics, "np.ndarray"]
+) -> "np.ndarray":
     """
     uvd is any tensor where the last dimension should have dimension 3, with following content:
         u: u coordinate in the image
@@ -65,6 +76,9 @@ def get_ordered(uvd: "np.ndarray", intrinsics: Intrinsics) -> "np.ndarray":
         d: corresponding measured, depth value in meters
     """
     assert uvd.shape[-1] == 3
+
+    if isinstance(intrinsics, np.ndarray):
+        intrinsics = Intrinsics.from_matrix(intrinsics)
 
     xyz_noisy = np.stack(
         (
@@ -81,7 +95,7 @@ def get_ordered(uvd: "np.ndarray", intrinsics: Intrinsics) -> "np.ndarray":
 def get_points(
     points: "np.ndarray",
     depth: "np.ndarray",
-    intrinsics: Intrinsics,
+    intrinsics: Union[Intrinsics, "np.ndarray"],
     rgb: Optional["np.ndarray"] = None,
     remove_out_of_bounds: bool = True,
 ) -> "np.ndarray":
@@ -125,7 +139,9 @@ def get_points(
     return points_3d, colors
 
 
-def get_xyz(depth: "np.ndarray", intrinsics: Intrinsics) -> "np.ndarray":
+def get_xyz(
+    depth: "np.ndarray", intrinsics: Union[Intrinsics, "np.ndarray"]
+) -> "np.ndarray":
     """
     Returns xyz image,
     depth <= 0.0 will be nan
@@ -148,7 +164,7 @@ def get_xyz(depth: "np.ndarray", intrinsics: Intrinsics) -> "np.ndarray":
 
 def get_pc(
     depth: "np.ndarray",
-    intrinsics: Intrinsics,
+    intrinsics: Union[Intrinsics, "np.ndarray"],
     mask: Optional["np.ndarray"] = None,
     rgb: Optional["np.ndarray"] = None,
 ) -> "np.ndarray":
@@ -190,8 +206,14 @@ def make_non_homoegeneous(points: "np.ndarray") -> "np.ndarray":
     return points[:, :-1] / points[:, -1][..., None]
 
 
-def project_onto_image(points: "np.ndarray", intrinsics: Intrinsics) -> "np.ndarray":
+def project_onto_image(
+    points: "np.ndarray", intrinsics: Union[Intrinsics, "np.ndarray"]
+) -> "np.ndarray":
     assert points.shape[-1] == 3
+
+    if isinstance(intrinsics, np.ndarray):
+        intrinsics = Intrinsics.from_matrix(intrinsics)
+
     # TODO What about:
     # - flip x and y rows?
     # - flip y-axis because frame starts top-right?
