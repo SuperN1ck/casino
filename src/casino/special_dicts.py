@@ -52,6 +52,30 @@ class AccumulatorDict(dict):
         return {k: v for k, v in self.items()}
 
 
+def map_nested_dicts(
+    ob: Union[Any, Mapping], func: Callable = lambda x: x, inplace: bool = False
+):
+    if inplace:
+        for key, value in ob.items():
+            if isinstance(value, Mapping):
+                map_nested_dicts(value, func, inplace=inplace)
+            else:
+                ob[key] = func(value)
+        return ob
+    else:
+        if isinstance(ob, Mapping):
+            if not isinstance(ob, Dict):
+                print(
+                    "Warning. Creating a new dict but the input data type is different."
+                )
+            return {
+                key: map_nested_dicts(value, func, inplace=inplace)
+                for key, value in ob.items()
+            }
+        else:
+            return func(ob)
+
+
 class NumpyConcatenateDict(AccumulatorDict):
     def __init__(self, axis: int = 0, **kwargs):
         super(NumpyConcatenateDict, self).__init__(**kwargs)
