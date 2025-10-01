@@ -199,11 +199,35 @@ def make_homogeneous(points: "np.ndarray") -> "np.ndarray":
 
 
 def make_non_homoegeneous(points: "np.ndarray") -> "np.ndarray":
-    assert points.ndim == 2
+    assert points.shape[-1] == 4
     """
     Divides last dimensions with the last entry
     """
-    return points[:, :-1] / points[:, -1][..., None]
+    return points[..., :-1] / points[..., -1][..., None]
+
+
+def make_homogeneous_th(points: "torch.Tensor") -> "torch.Tensor":
+    """
+    Adds a one at the end of the last dimension
+    """
+    assert points.shape[-1] == 3
+    return torch.cat(
+        (
+            points,
+            torch.ones(
+                (*points.shape[:-1], 1),
+                device=points.device,
+            ),
+        ),
+        dim=-1,
+    )
+
+
+def make_non_homoegeneous_th(points: "torch.Tensor") -> "torch.Tensor":
+    """
+    Divides last dimensions with the last entry
+    """
+    return make_non_homoegeneous(points)
 
 
 def project_onto_image(
@@ -244,6 +268,28 @@ def transform_3d_points(
         points_trans = (transform @ points_hom.T).T
 
     return make_non_homoegeneous(points_trans)
+
+
+def transform_3d_points_th(
+    points: "torch.Tensor", transform: "torch.Tensor", post_multiply: bool = False
+) -> "torch.Tensor":
+    assert points.shape[-1]
+    B_points = points.shape[:-2]
+    B_transform = transform.shape[:-2]
+
+    if len(B_transform) == 0 and len(B_points) > 0:
+        transform = transform.view((1,) * len(B_points) + (4, 4))
+        transform = transform.repeat(*B_points, 1, 1)
+    else:
+        assert B_transform == B_points
+
+    points_hom = make_homogeneous_th(points)
+    if post_multiply:
+        points_trans = torch.einsum("...nj,...ij->...ni", points_hom, transform)
+    else:
+        points_trans = torch.einsum("...ij,...nj->...ni", transform, points_hom)
+
+    return make_non_homoegeneous_th(points_trans)
 
 
 def subsample(point_cloud: "np.ndarray", n_points: int, dim: int = 0):
