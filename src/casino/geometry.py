@@ -23,6 +23,13 @@ except:
 
     logging.debug("torch not availble. Some functionality in geometry.py will break")
 
+try:
+    import roma
+except:
+    import logging
+
+    logging.debug("roma not availble. Some functionality in geometry.py will break")
+
 
 def circle_samples(
     radius: float = 1.0,
@@ -147,6 +154,44 @@ def vec_projection_th(v: "torch.Tensor", e: "torch.Tensor") -> "torch.Tensor":
     """Project vector v onto unit vector e."""
     proj = torch.sum(v * e, dim=-1, keepdim=True) * e
     return proj
+
+
+def transform_flat_pose_vector_th(
+    T: "torch.Tensor",
+    v: "torch.Tensor",
+    pre_multiply: bool = True,
+) -> "torch.Tensor":
+    """
+    Converts v into a 4x4 transformation matrix and applies M to it,
+    then flattens it again
+    """
+    assert v.shape[-1] == 6, f"Expected last dimension of v to be 6, got: {v.shape}"
+    v_xyz = v[..., :3]
+    v_rot = roma.rotvec_to_rotmat(v[..., 3:6])
+
+    V = to_transformation_matrix_th(t=v_xyz, R=v_rot)
+    assert T.shape[-2:] == (
+        4,
+        4,
+    ), f"T should be a 4x4 transformation matrix, but got shape: {T.shape}"
+    assert V.shape[-2:] == (
+        4,
+        4,
+    ), f"V should be a 4x4 transformation matrix, but got shape: {V.shape}"
+
+    if pre_multiply:
+        transformed_V = torch.matmul(T, V)
+    else:
+        transformed_V = torch.matmul(V, T)
+
+    transformed_V_xyz = transformed_V[..., :3, 3]
+    transformed_V_rot = roma.rotmat_to_rotvec(transformed_V[..., :3, :3])
+    transformed_v = torch.cat([transformed_V_xyz, transformed_V_rot], dim=-1)
+
+    # if additionally_return_transformed_matrix:
+    #     return transformed_v, transformed_V
+
+    return transformed_v
 
 
 def axisangle2quat_np(vec):
