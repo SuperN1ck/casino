@@ -7,9 +7,12 @@ from typing import Optional, Set
 
 try:
     import rerun as rr
+
+    assert int(rr.__version__.split(".")[0]) >= 0
+    assert int(rr.__version__.split(".")[1]) >= 25
 except:
     logging.debug(
-        "rerun-sdk not availble. Most functionality in rerun_wrapper.py will break."
+        "rerun-sdk>=0.25 not availble. Most functionality in rerun_wrapper.py will break."
     )
 
 try:
@@ -65,21 +68,25 @@ class RerunViewer:
         self, name: str, addr: str = None, recording_id: Optional[str] = None
     ):
         if self.recording is None:
-            self.recording = rr.new_recording(
-                name, spawn=True, recording_id=recording_id
-            )
+            self.recording = rr.RecordingStream(name, recording_id=recording_id)
+            self.recording.spawn()
+
         if addr is None:
             addr = "127.0.0.1"
-        port = ":9876"
-        rr.connect(addr + port, recording=self.recording)
+        port = "9876"
+        uri = f"rerun+http://{addr}:{port}/proxy"
+
+        rr.connect_grpc(uri, recording=self.recording)
 
     def clear(self, recursive: bool = True):
         for entity_name in self.entity_names:
             self.recording.log(entity_name, rr.Clear(recursive=recursive))
         # self.entity_names.clear()
 
-    def set_time_sequence(self, *args, **kwargs):
-        rr.set_time_sequence(*args, **kwargs, recording=self.recording)
+    def set_time_sequence(self, timeline_name, time_index):
+        rr.set_time(
+            timeline=timeline_name, sequence=time_index, recording=self.recording
+        )
 
     # TODO Re-activate? RerunViewer --> self
     # @staticmethod
@@ -188,7 +195,7 @@ class RerunViewer:
 
     @add_name_to_entity_list
     def add_scalar(self, name: str, scalar_value):
-        self.recording.log(name, rr.Scalar(scalar_value))
+        self.recording.log(name, rr.Scalars(np.array(scalar_value)))
 
     def add_array(self, name: str, array: "np.ndarray", **kwargs):
         self.recording.log(name, rr.Tensor(array, **kwargs))
@@ -203,6 +210,17 @@ class RerunViewer:
     ):
         self.recording.log(
             name, rr.Points2D(positions=points_2D, **point_kwargs), **log_kwargs
+        )
+
+    @add_name_to_entity_list
+    def add_hist(self, name: str, data: "np.ndarray", hist_kwargs={}, log_kwargs={}):
+        """
+        Pass arguments to np.histogram via hist_kwargs.
+        """
+        assert data.ndim == 1, "Data must be 1D."
+        counts, bins = np.histogram(data, **hist_kwargs)
+        self.recording.log(
+            name, rr.BarChart(values=counts, abscissa=bins), **log_kwargs
         )
 
     # @staticmethod
