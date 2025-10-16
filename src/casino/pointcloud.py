@@ -386,6 +386,47 @@ def crop_aabb(point_cloud: "np.ndarray", aabb: "np.ndarray", in_place: bool = Tr
     return point_cloud[mask]
 
 
+# Perfoms a weighted distance measure to the points
+def weighted_distance_to_point_th(
+    points: "torch.Tensor",
+    anchor_points: "torch.Tensor",
+    data_dim: int = -1,  # e.g. should be 3
+    points_dim: int = -2,  # dimension for point
+    scale: float = 1,
+):
+    """
+    Bump up scale to make the curve sharper, i.e. softmax values more distinct
+    """
+    # TODO Make it batched? Is this needed?
+    # i.e. what happens if anchor points has size
+    #   3
+    # or
+    #   N_points x 3
+    # does this still work?
+
+    # if points.ndim == 2:
+    #     points = points.unsqueeze(0)
+    # assert points.shape[points_dim] == 3
+
+    if anchor_points.ndim > 1:
+        # Make sure they share the same dimensions
+        assert deindex(anchor_points.shape, data_dim) == deindex(points.shape, data_dim)
+
+    dist = torch.norm(points - anchor_points, dim=data_dim, keepdim=True)
+    weights = torch.softmax((1 / dist + 1e-7) / scale, dim=points_dim)
+
+    # fig, axes = plt.subplots(ncols=2, nrows=1)
+    # axes[0].hist(dist[0, :, 0])
+    # axes[0].set_xlim(0.0, 3.0)  # from 0 to 3m euclid
+    # axes[1].hist(weights[0, :, 0])
+    # # axes[1].set_xlim(0.0, 0.001)
+    # plt.show()
+    # print(f"{weights.min() = }")
+    # print(f"{weights.max() = }")
+
+    return weights, dist
+
+
 def to_o3d(
     pcd: "np.ndarray", color: "np.ndarray" = None, filter_invalid: bool = True
 ) -> "o3d.geometry.PointCloud":
