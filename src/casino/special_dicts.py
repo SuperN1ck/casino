@@ -1,13 +1,21 @@
 import logging
 import operator
+from collections.abc import Mapping, Iterable
 from collections import OrderedDict
-from typing import Dict
+from typing import Dict, Callable, Union, Any, Iterable, Optional
 
 try:
     import numpy as np
 except:
     logging.debug(
         "numpy not availble. Some functionality in special_dicts.py will break"
+    )
+
+try:
+    import torch
+except:
+    logging.debug(
+        "torch not availble. Some functionality in special_dicts.py will break"
     )
 
 
@@ -45,13 +53,19 @@ class AccumulatorDict(dict):
                 if dict.__contains__(self, key):
                     old_dict = dict.__getitem__(self, key)
                     if not isinstance(old_dict, AccumulatorDict):
-                        old_dict = AccumulatorDict(old_dict)
+                        new_dict = type(self)(accumulator=self.accumulator)
+                        new_dict.increment_dict(old_dict)
+                        old_dict = new_dict
                     # This performs the operation in-place
                     # TODO: Is there a clever way to verify this?
                     old_dict.increment_dict(value)
+                    dict.__setitem__(self, key, old_dict)
                 else:
+                    # value is a dict, but not an AccumulatorDict
                     if not isinstance(value, AccumulatorDict):
-                        value = AccumulatorDict(value)
+                        new_dict = type(self)(accumulator=self.accumulator)
+                        new_dict.increment_dict(value)
+                        value = new_dict
                     dict.__setitem__(self, key, value)
             else:
                 self.increment(key, value)
@@ -181,3 +195,24 @@ def remove_data_parallel(old_state_dict):
         new_state_dict[name] = v
 
     return new_state_dict
+
+
+# def update_recursively(target_dict, source_dict):
+#     # Update the target_dict with the values of the source dict
+#     for key, value in source_dict.items():
+#         if isinstance(Dict, value) and key in target_dict.keys():
+#             update_recursively
+
+
+def deindex(
+    input_iterable: Iterable, deindex: Optional[Union[Iterable[int], int]] = None
+):
+    """
+    Removes a list of indices from an iterable
+    Careful, full copy
+    """
+    if isinstance(deindex, int):
+        deindex = [deindex]
+    # Handle cases for negative numbers
+    deindex += [len(input_iterable) + idx for idx in deindex if idx < 0]
+    return [x for idx, x in enumerate(input_iterable) if not idx in deindex]
