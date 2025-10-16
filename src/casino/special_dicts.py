@@ -100,6 +100,29 @@ class NumpyConcatenateDict(AccumulatorDict):
         self.accumulator = wrapped_concatenate
 
 
+class TorchConcatenateDict(AccumulatorDict):
+    def __init__(self, dim: int = 0, allow_other_datatypes: bool = True, **kwargs):
+        super(TorchConcatenateDict, self).__init__(**kwargs)
+        self.allow_other_datatypes = allow_other_datatypes
+
+        def wrapped_concatenate(tensor0: "torch.Tensor", tensor1: "torch.Tensor"):
+            if isinstance(tensor0, torch.Tensor) and isinstance(tensor1, torch.Tensor):
+                return torch.concatenate((tensor0, tensor1), dim=dim)
+            elif (
+                allow_other_datatypes
+                and dim == 0
+                and isinstance(tensor0, Iterable)
+                and isinstance(tensor1, Iterable)
+            ):
+                return tensor0 + tensor1
+            else:
+                raise ValueError(
+                    f"Cannot concatenate {type(tensor0)} and {type(tensor1)}"
+                )
+
+        self.accumulator = wrapped_concatenate
+
+
 class IndexDict(dict):
     """
     This will incrementally count up for unseen keys
