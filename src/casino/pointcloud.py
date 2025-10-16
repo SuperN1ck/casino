@@ -280,6 +280,12 @@ def transform_3d_points_th(
     if len(B_transform) == 0 and len(B_points) > 0:
         transform = transform.view((1,) * len(B_points) + (4, 4))
         transform = transform.repeat(*B_points, 1, 1)
+    elif len(B_transform) == len(B_points):
+        repeats = [
+            b_points // b_transform
+            for b_points, b_transform in zip(B_points, B_transform)
+        ]
+        transform = transform.repeat(*repeats, 1, 1)
     else:
         assert B_transform == B_points
 
