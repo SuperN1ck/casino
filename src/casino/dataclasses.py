@@ -20,6 +20,9 @@ def collate_dataclass_torch(dps: Any, device: str = "cpu"):
     Can't process a full tree, only a single level
     TODO Make this recursive eventually
     """
+    if not dataclasses.is_dataclass(dps[0]):
+        return torch.utils.data.default_collate(dps)
+
     collated_dp = copy.deepcopy(dps[0])
     for d_field in dataclasses.fields(dps[0]):
         # Check for None in batch
