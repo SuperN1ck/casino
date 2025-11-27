@@ -298,3 +298,10 @@ def _linear_interpolate(
 ) -> Union["np.ndarray", "torch.Tensor"]:
 
     return (1 - alphas) * start + alphas * end
+def get_linear_projection_matrix_np(in_dims: int, out_dims: int):
+    assert in_dims % out_dims == 0, "in_dims must be multiple of out_dims"
+    matrix = np.zeros((out_dims, in_dims))
+    factor = in_dims // out_dims
+    for i in range(out_dims):
+        matrix[i, i * factor : (i + 1) * factor] = 1.0 / factor
+    return matrix
