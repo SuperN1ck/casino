@@ -10,6 +10,7 @@ class SVDProjector:
     def __init__(self, X: "np.ndarray", info: bool = True):
         # Is this too similar to sklearn's PCA? 
         # https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html#pca
+        # We expect X to be N x D where N is the number of samples and D the dimensionality
         self.X_mean = X.mean(axis=0)
         self.U, self.S, self.Vh = np.linalg.svd(X - self.X_mean)
         relative_S = self.S / np.sum(self.S)
