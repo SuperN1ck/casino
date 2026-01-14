@@ -313,25 +313,34 @@ def subsample(point_cloud: "np.ndarray", n_points: int, dim: int = 0):
         return point_cloud[:, idx]
 
 
-def subsample_th(pointcloud: "torch.Tensor", n_points: int, sample_dim: int = -2):
+def subsample_th(
+    pointcloud: "torch.Tensor",
+    n_points: int,
+    sample_dim: int = -2,
+    verify: bool = False,
+):
     """
     Uniformly subsamples a pointcloud to `n_points` along the `sample_dim`.
     Indices are shuffled for each batch entry.
 
     Assumes the shape of
-        N x 3
+        N x P
     or
-        3 x N
+        P x N
     or
-        B_1 x ... x B_b x N x 3
+        B_1 x ... x B_b x N x P
     or
-        B_1 x ... x B_b x 3 x N
+        B_1 x ... x B_b x P x N
+
+    where N is the number of points and P the feature dimension for each point.
 
     sample_dim defines the dimesions along which we sample
         - should be -1 or -2
-        - default (sample_dim=-2) is assuming N x 3
+        - default (sample_dim=-2) is assuming N x P
     """
     og_tensor_shape = list(pointcloud.size())
+    point_dim = -1 if sample_dim in [-2, 1] else -2
+    point_dim_size = og_tensor_shape[point_dim]
 
     # Flat away all batch dimensions
     flat_pc = (
@@ -343,21 +352,24 @@ def subsample_th(pointcloud: "torch.Tensor", n_points: int, sample_dim: int = -2
     B = flat_pc.size(0)
     in_n_points = flat_pc.size(sample_dim)
 
+    if verify and n_points <= in_n_points:
+        raise ValueError(f"Cannot subsample to {n_points = } from {in_n_points = }")
+
     # For each entry create
     indices = [torch.randperm(in_n_points)[:n_points] for _ in range(B)]
     stacked_indices = torch.stack(indices, dim=0).to(flat_pc.device)
 
     if sample_dim in [-2, 1]:
-        stacked_indices = stacked_indices.unsqueeze(-1).expand(-1, -1, 3)
+        stacked_indices = stacked_indices.unsqueeze(-1).expand(-1, -1, point_dim_size)
     elif sample_dim in [-1, 2]:
-        stacked_indices = stacked_indices.unsqueeze(-2).expand(-1, 3, -1)
+        stacked_indices = stacked_indices.unsqueeze(-2).expand(-1, point_dim_size, -1)
     else:
         raise NotImplementedError(f"Unknown {sample_dim = }")
 
     sampled_pc = torch.gather(flat_pc, dim=sample_dim, index=stacked_indices)
 
     # Overwrite original point amount with new size
-    og_tensor_shape[sample_dim] = n_points
+    og_tensor_shape[sample_dim] = min(n_points, in_n_points)
     og_size_sampled_pc = sampled_pc.reshape(og_tensor_shape)
     return og_size_sampled_pc
 
