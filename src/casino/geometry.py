@@ -194,6 +194,79 @@ def transform_flat_pose_vector_th(
     return transformed_v
 
 
+def rotvec_to_rotmat_np(rotvec: "np.ndarray") -> "np.ndarray":
+    """
+    Converts axis-angle representation to rotation matrix
+    Args:
+        rotvec (np.ndarray): Axis-angle representation of shape (..., 3)
+    Returns:
+        rotmat (np.ndarray): Rotation matrix of shape (..., 3, 3)
+    """
+    angles = np.linalg.norm(rotvec, axis=-1)
+    axis = rotvec / angles[..., None]
+
+    cos_angles = np.cos(angles)
+    sin_angles = np.sin(angles)
+    one_minus_cos = 1.0 - cos_angles
+
+    x = axis[..., 0]
+    y = axis[..., 1]
+    z = axis[..., 2]
+
+    rotmat = np.zeros(rotvec.shape[:-1] + (3, 3), dtype=rotvec.dtype)
+
+    rotmat[..., 0, 0] = cos_angles + x * x * one_minus_cos
+    rotmat[..., 0, 1] = x * y * one_minus_cos - z * sin_angles
+    rotmat[..., 0, 2] = x * z * one_minus_cos + y * sin_angles
+
+    rotmat[..., 1, 0] = y * x * one_minus_cos + z * sin_angles
+    rotmat[..., 1, 1] = cos_angles + y * y * one_minus_cos
+    rotmat[..., 1, 2] = y * z * one_minus_cos - x * sin_angles
+
+    rotmat[..., 2, 0] = z * x * one_minus_cos - y * sin_angles
+    rotmat[..., 2, 1] = z * y * one_minus_cos + x * sin_angles
+    rotmat[..., 2, 2] = cos_angles + z * z * one_minus_cos
+
+    # Handle zero-rotation case
+    rotmat = np.where(
+        np.isclose(angles, 0.0)[..., np.newaxis, np.newaxis],
+        np.eye(3, dtype=rotvec.dtype),
+        rotmat,
+    )
+
+    return rotmat
+
+
+def rotmat_to_rotvec_np(rotmat: "np.ndarray") -> "np.ndarray":
+    """
+    Converts rotation matrix to axis-angle representation
+    Args:
+        rotmat (np.ndarray): Rotation matrix of shape (..., 3, 3)
+    Returns:
+        rotvec (np.ndarray): Axis-angle representation of shape (..., 3)
+    """
+    trace = np.trace(rotmat, axis1=-2, axis2=-1)
+    angles = np.arccos((trace - 1) / 2.0)
+
+    rx = rotmat[..., 2, 1] - rotmat[..., 1, 2]
+    ry = rotmat[..., 0, 2] - rotmat[..., 2, 0]
+    rz = rotmat[..., 1, 0] - rotmat[..., 0, 1]
+    axis = np.stack([rx, ry, rz], axis=-1)
+    axis_norm = np.linalg.norm(axis, axis=-1, keepdims=True)
+    axis = axis / axis_norm
+
+    rotvec = axis * angles[..., np.newaxis]
+
+    # Handle zero-rotation case
+    rotvec = np.where(
+        np.isclose(angles, 0.0)[..., np.newaxis],
+        np.zeros_like(rotvec),
+        rotvec,
+    )
+
+    return rotvec
+
+
 def transform_sixdof_pose_vector_th(
     T: "torch.Tensor",
     v: "torch.Tensor",
