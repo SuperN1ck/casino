@@ -10,6 +10,7 @@ class LearningRateScheduleType(enum.Enum):
     CONSTANT = enum.auto()
     LEVEL_DECAY = enum.auto()
     COSINE = enum.auto()
+    COSINE_WARMUP = enum.auto()
 
 
 # TODO [NH] 2025/05/23: Maybe should be a config class for each type of schedule?
@@ -59,6 +60,13 @@ class LearningRateSchedule:
                 initial_lr=cfg.initial_lr,
                 final_lr=cfg.final_lr,
                 T_max=cfg.length,
+            )
+        elif cfg.type == LearningRateScheduleType.COSINE_WARMUP:
+            return CosineLearningRateLinearWarmupSchedule(
+                warmed_up_lr=cfg.initial_lr,
+                T_max=cfg.length,
+                T_warmup=cfg.interval_step,
+                final_lr=cfg.final_lr,
             )
         else:
             raise Exception(
@@ -132,6 +140,35 @@ class CosineLearningRateSchedule(LearningRateSchedule):
             * (1 + math.cos(math.pi * epoch / self.T_max))
             / 2
         )
+
+
+class CosineLearningRateLinearWarmupSchedule(LearningRateSchedule):
+    def __init__(
+        self,
+        warmed_up_lr: float,
+        T_max: int,
+        T_warmup,
+        final_lr: float = 0.0,
+        initial_lr: float = 0.0,
+    ):
+        self.T_warmup = T_warmup
+
+        self.linear_warmup_schedule = WarmupLearningRateSchedule(
+            initial_lr=initial_lr,
+            warmed_up_lr=warmed_up_lr,
+            length=T_warmup,
+        )
+        self.cosine_schedule = CosineLearningRateSchedule(
+            initial_lr=warmed_up_lr,
+            final_lr=final_lr,
+            T_max=T_max - T_warmup,
+        )
+
+    def get_learning_rate(self, epoch: int):
+        if epoch < self.T_warmup:
+            return self.linear_warmup_schedule.get_learning_rate(epoch)
+        else:
+            return self.cosine_schedule.get_learning_rate(epoch - self.T_warmup)
 
 
 # Torch Specific Implementations
