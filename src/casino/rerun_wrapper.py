@@ -125,9 +125,16 @@ class RerunViewer:
 
     @add_name_to_entity_list
     def add_axis(
-        self, name: str, pose: "np.ndarray", size: float = 0.01, static: bool = False
+        self,
+        name: str,
+        pose: "np.ndarray",
+        size: float = 0.01,
+        origin_color=None,
+        static: bool = False,
     ):
-        mesh = trimesh.creation.axis(origin_size=size, transform=pose)
+        mesh = trimesh.creation.axis(
+            origin_size=size, origin_color=origin_color, transform=pose
+        )
         self.add_mesh_trimesh(name, mesh, static=static)
 
     add_pose = add_axis
@@ -168,7 +175,7 @@ class RerunViewer:
             vertex_positions=mesh.vertices,
             vertex_colors=vertex_colors,
             vertex_normals=mesh.vertex_normals,
-            # indices=mesh.faces,
+            triangle_indices=mesh.faces,
         )
         self.recording.log(name, rr_mesh, static=static)
 
