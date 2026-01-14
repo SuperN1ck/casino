@@ -451,6 +451,44 @@ def _linear_interpolate(
 ) -> Union["np.ndarray", "torch.Tensor"]:
 
     return (1 - alphas) * start + alphas * end
+
+
+def get_projection_matrix_np(in_dims: int, out_dims: int):
+    """
+    Creates a projection matrix that maps ("splats") from in_dims to out_dims, keeping diversity
+    """
+    # [NH] This could proably be improved, but as long as the output is unique, we are good
+    assert out_dims >= in_dims
+    matrix = np.zeros((out_dims, in_dims))
+
+    # First, set the identity part
+    for i in range(in_dims):
+        matrix[i, i] = 1.0
+
+    basis_vectors = matrix[:in_dims, :]
+    full_vector = np.ones(in_dims)
+
+    extras = out_dims - in_dims
+
+    for i in range(extras):
+        for j in range(in_dims):
+            alpha = (i + 1) / (extras + 1)
+            new_vector = alpha * basis_vectors[j] + (1 - alpha) * (
+                full_vector - basis_vectors[j]
+            ) / (in_dims - 1)
+            matrix[in_dims + i, :] = new_vector
+
+        # 2D Case (easier to thing)
+        # alpha = (i + 1) / (extras + 1)
+        # new_vector = alpha * basis_vectors[0] + (1 - alpha) * basis_vectors[1]
+        # matrix[in_dims + i, :] = new_vector
+
+    assert np.unique(np.round(matrix, decimals=6), axis=0).shape == (out_dims, in_dims)
+    matrix /= np.linalg.norm(matrix, axis=1, keepdims=True)
+    # matrix /= np.sum(matrix, axis=1, keepdims=True)
+    return matrix
+
+
 def get_linear_projection_matrix_np(in_dims: int, out_dims: int):
     assert in_dims % out_dims == 0, "in_dims must be multiple of out_dims"
     matrix = np.zeros((out_dims, in_dims))
