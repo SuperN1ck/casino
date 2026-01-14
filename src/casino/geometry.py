@@ -194,6 +194,48 @@ def transform_flat_pose_vector_th(
     return transformed_v
 
 
+def transform_sixdof_pose_vector_th(
+    T: "torch.Tensor",
+    v: "torch.Tensor",
+    pre_multiply: bool = True,
+) -> "torch.Tensor":
+    """
+    Converts v into a 4x4 transformation matrix and applies M to it,
+    then flattens it again
+    """
+    assert v.shape[-1] == 9, f"Expected last dimension of v to be 9, got: {v.shape}"
+    v_xyz = v[..., :3]
+    v_rot = roma.special_gramschmidt(torch.stack([v[..., 3:6], v[..., 6:9]], dim=-1))
+
+    V = to_transformation_matrix_th(t=v_xyz, R=v_rot)
+    assert T.shape[-2:] == (
+        4,
+        4,
+    ), f"T should be a 4x4 transformation matrix, but got shape: {T.shape}"
+    assert V.shape[-2:] == (
+        4,
+        4,
+    ), f"V should be a 4x4 transformation matrix, but got shape: {V.shape}"
+
+    if pre_multiply:
+        transformed_V = torch.matmul(T, V)
+    else:
+        transformed_V = torch.matmul(V, T)
+
+    transformed_V_xyz = transformed_V[..., :3, 3]
+    transformed_v_1 = transformed_V[..., :3, 0]
+    transformed_v_2 = transformed_V[..., :3, 1]
+
+    transformed_v = torch.cat(
+        [transformed_V_xyz, transformed_v_1, transformed_v_2], dim=-1
+    )
+
+    # if additionally_return_transformed_matrix:
+    #     return transformed_v, transformed_V
+
+    return transformed_v
+
+
 def axisangle2quat_np(vec):
     """
     Copied from robosuite but extedned to batches
