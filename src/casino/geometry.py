@@ -194,6 +194,44 @@ def transform_flat_pose_vector_th(
     return transformed_v
 
 
+def transform_flat_pose_vector_np(
+    T: "np.ndarray",
+    v: "np.ndarray",
+    pre_multiply: bool = True,
+) -> "np.ndarray":
+    """
+    Converts v into a 4x4 transformation matrix and applies M to it,
+    then flattens it again
+    """
+    assert v.shape[-1] == 6, f"Expected last dimension of v to be 6, got: {v.shape}"
+    v_xyz = v[..., :3]
+    v_rot = rotvec_to_rotmat_np(v[..., 3:6])
+
+    V = to_transformation_matrix(t=v_xyz, R=v_rot)
+    assert T.shape[-2:] == (
+        4,
+        4,
+    ), f"T should be a 4x4 transformation matrix, but got shape: {T.shape}"
+    assert V.shape[-2:] == (
+        4,
+        4,
+    ), f"V should be a 4x4 transformation matrix, but got shape: {V.shape}"
+
+    if pre_multiply:
+        transformed_V = np.matmul(T, V)
+    else:
+        transformed_V = np.matmul(V, T)
+
+    transformed_V_xyz = transformed_V[..., :3, 3]
+    transformed_V_rot = rotmat_to_rotvec_np(transformed_V[..., :3, :3])
+    transformed_v = np.concatenate([transformed_V_xyz, transformed_V_rot], axis=-1)
+
+    # if additionally_return_transformed_matrix:
+    #     return transformed_v, transformed_V
+
+    return transformed_v
+
+
 def rotvec_to_rotmat_np(rotvec: "np.ndarray") -> "np.ndarray":
     """
     Converts axis-angle representation to rotation matrix
