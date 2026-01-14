@@ -2,8 +2,6 @@ import logging
 from typing import Iterable, List
 import functools
 
-from ..learning.learning_rate_schedulers import CosineLearningRateLinearWarmupSchedule
-
 try:
     import torch
 except:
