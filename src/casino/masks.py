@@ -109,6 +109,16 @@ def filter_coords(points, shape, return_mask: bool = False):
     return new_points
 
 
+def bbox_to_mask(bbox, mask_shape):
+    """
+    bbox: left, upper, right, lower
+    for mask shape H x W
+    """
+    mask = np.zeros(mask_shape, dtype=bool)
+    mask[bbox[1] : bbox[3], bbox[0] : bbox[2]] = True
+    return mask
+
+
 def make_mask_aa_bbox(mask):
     """
     Inplace!
