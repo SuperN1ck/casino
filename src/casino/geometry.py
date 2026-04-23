@@ -137,16 +137,48 @@ def numpy_batched_eye(*args, **kwargs):
     return batched_eye_np(*args, **kwargs)
 
 
-def grahm_schmidt_th(v1: "torch.Tensor", v2: "torch.Tensor") -> "torch.Tensor":
+def _any_orthogonal(v: torch.Tensor, eps: float = 1e-8) -> torch.Tensor:
+    """
+    Return a unit vector that is orthogonal to ``v``.
+    Works for batched ``(..., 3)`` tensors.
+    """
+    # Choose the axis (x, y or z) that is *least* aligned with v
+    #   which minimizes the chance of a zero cross‑product.
+    abs_v = v.abs()
+    # shape (..., 3); argmin gives index 0,1,2 for each batch element
+    min_idx = abs_v.argmin(dim=-1)
+
+    # Build a one‑hot basis vector: (1,0,0) or (0,1,0) or (0,0,1)
+    #   using torch.nn.functional.one_hot
+    basis = torch.nn.functional.one_hot(min_idx, num_classes=3).to(v)
+    # Cross product yields a vector orthogonal to both
+    ortho = torch.cross(v, basis, dim=-1)
+
+    # Normalise (the norm cannot be zero because we deliberately picked a non‑parallel axis)
+    return ortho / (torch.norm(ortho, dim=-1, keepdim=True) + eps)
+
+
+def grahm_schmidt_th(
+    v1: "torch.Tensor", v2: "torch.Tensor", eps: float = 1e-6
+) -> "torch.Tensor":
     """Compute orthonormal basis from two vectors."""
     u1 = v1
-    e1 = u1 / torch.norm(u1, dim=-1, keepdim=True)
+    e1 = u1 / (torch.norm(u1, dim=-1, keepdim=True))
     u2 = v2 - vec_projection_th(v2, e1)
-    e2 = u2 / torch.norm(u2, dim=-1, keepdim=True)
+
+    u2_norm = torch.norm(u2, dim=-1, keepdim=True)
+    e2 = u2 / u2_norm
+
+    # We need to check whether u2 is close to zero, which means v2 is parallel to v1. In that case, we can just pick an arbitrary orthogonal vector to e1 as e2.
+    e2 = torch.where(u2_norm < eps, _any_orthogonal(e1, eps), e2)
+
     e3 = torch.cross(e1, e2, dim=-1)
     rot_matrix = torch.cat(
         [e1.unsqueeze(dim=-1), e2.unsqueeze(dim=-1), e3.unsqueeze(dim=-1)], dim=-1
     )
+    # Check for Nans --> identity
+    nan_mask = torch.isnan(rot_matrix).sum(dim=(-2, -1)) > 0
+    rot_matrix[nan_mask] = torch.eye(3, device=v1.device, dtype=v1.dtype)
     return rot_matrix
 
 
