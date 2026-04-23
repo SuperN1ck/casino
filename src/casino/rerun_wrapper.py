@@ -118,10 +118,18 @@ class RerunViewer:
         name: str,
         points: "np.ndarray",
         colors_uint8: "np.ndarray" = None,
+        normals_float32: "np.ndarray" = None,
+        normal_length: float = 0.1,
         radii: float = None,
     ):
         rr_points = rr.Points3D(positions=points, colors=colors_uint8, radii=radii)
         self.recording.log(name, rr_points)
+
+        if normals_float32 is not None:
+            self.recording.log(
+                f"{name}/normals",
+                rr.Arrows3D(origins=points, vectors=normals_float32 * normal_length),
+            )
 
     @add_name_to_entity_list
     def add_axis(
@@ -220,14 +228,103 @@ class RerunViewer:
         )
 
     @add_name_to_entity_list
-    def add_hist(self, name: str, data: "np.ndarray", hist_kwargs={}, log_kwargs={}):
+    def add_hist(self, name: str, data: "np.ndarray", normalize=False, hist_kwargs={}, log_kwargs={}):
         """
         Pass arguments to np.histogram via hist_kwargs.
         """
         assert data.ndim == 1, "Data must be 1D."
         counts, bins = np.histogram(data, **hist_kwargs)
+        if normalize:
+            counts = counts / counts.sum()
         self.recording.log(
             name, rr.BarChart(values=counts, abscissa=bins), **log_kwargs
+        )
+
+    @add_name_to_entity_list
+    def add_np_voxel_grid(
+        self,
+        name: str,
+        occupancy: "np.ndarray",
+        point_size_multiplier: float = 0.5,
+        grid_dimensions: Optional["np.ndarray"] = np.array(
+            [
+                [-1.0, 1.0],
+                [-1.0, 1.0],
+                [-1.0, 1.0],
+            ]
+        ),
+        static: bool = False,
+        color_uint8=None,
+        normals_float32=None,
+    ):
+        """
+        voxel_grid: 3D numpy array of bools or ints (1 = occupied, 0 = free)
+        voxel_size: size of each voxel
+        origin: origin of the voxel grid in world coordinates
+        """
+        assert occupancy.ndim == 3, "Occupancy grid must be 3D."
+        assert grid_dimensions.shape == (3, 2), "Grid dimensions must be (3, 2)."
+
+        occupied_indices = np.argwhere(occupancy)
+        if occupied_indices.shape[0] == 0:
+            logging.warning(f"No occupied voxels to add for {name}.")
+            return
+
+        grid_min = grid_dimensions[:, 0]
+        grid_max = grid_dimensions[:, 1]
+        grid_size = grid_max - grid_min
+        voxel_size = grid_size / np.array(occupancy.shape)
+        points = grid_min + occupied_indices * voxel_size + voxel_size / 2.0
+        point_colors = (
+            color_uint8.reshape(np.prod(color_uint8.shape[:3]), 3)[
+                np.ravel_multi_index(occupied_indices.T, color_uint8.shape[:3])
+            ]
+            if color_uint8 is not None
+            else None
+        )
+        point_normals = (
+            
+            normals_float32.reshape(np.prod(normals_float32.shape[:3]), 3)[
+                np.ravel_multi_index(occupied_indices.T, normals_float32.shape[:3])
+            ]
+            if normals_float32 is not None
+            else None
+        )
+        # self.recording.log(
+        #     name,
+        #     rr.Points3D(positions=points, radii=voxel_size / 2.0),
+        #     static=static,
+        # )
+        # self.recording.log(name, rr.Tensor(voxels, dim_names=["right", "back", "up"]))
+        self.add_np_pointcloud(
+            name,
+            points,
+            colors_uint8=point_colors,
+            normals_float32=point_normals,
+            radii=voxel_size.max() * point_size_multiplier,
+            normal_length=(grid_max - grid_min).mean() / 20.0,
+        )
+
+    @add_name_to_entity_list
+    def add_tensor(
+        self,
+        name,
+        tensor,
+        tensor_kwargs={},
+        log_kwargs={},
+    ):
+        self.recording.log(name, rr.Tensor(tensor, **tensor_kwargs), **log_kwargs)
+
+    @add_name_to_entity_list
+    def add_axis_rr(self, name, pose, size=0.01, origin_color=None, static=False):
+        self.recording.log(
+            name,
+            rr.Transform3D.from_fields(
+                mat3x3=pose[:3, :3],
+                translation=np.array(pose[:3, 3]),
+            ),
+            rr.TransformAxes3D(size),
+            static=static,
         )
 
     # @staticmethod
