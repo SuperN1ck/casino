@@ -409,6 +409,62 @@ def axisangle2quat_np(vec):
     )
 
 
+def convert_9dof_to_4x4matrix_np(poses_9dof):
+    assert poses_9dof.shape[-1] == 9
+    xyz = poses_9dof[..., 0:3]
+    v1 = poses_9dof[..., 3:6]
+    v2 = poses_9dof[..., 6:9]
+    # Assume v1 and v2 are already orthonormal --> No Gram-Schmidt needed here
+    v3 = np.cross(v1, v2)
+    rot_mat = np.stack([v1, v2, v3], axis=-1)
+    pose_4x4 = to_transformation_matrix(t=xyz, R=rot_mat)
+    return pose_4x4
+
+
+def convert_4x4matrix_to_9dof_np(poses_4x4):
+    assert poses_4x4.shape[-2:] == (4, 4)
+    xyz = poses_4x4[..., 0:3, 3]
+    v1 = poses_4x4[..., 0:3, 0]
+    v2 = poses_4x4[..., 0:3, 1]
+    return np.concatenate([xyz, v1, v2], axis=-1)
+
+
+def convert_9dof_to_4x4matrix_th(poses_9dof, grahm_schmidt: bool = False):
+    assert poses_9dof.shape[-1] == 9
+    xyz = poses_9dof[..., 0:3]
+    v1 = poses_9dof[..., 3:6]
+    v2 = poses_9dof[..., 6:9]
+    # Assume v1 and v2 are already orthonormal --> No Gram-Schmidt needed here
+    if not grahm_schmidt:
+        v3 = torch.cross(v1, v2)
+        rot_mat = torch.stack([v1, v2, v3], axis=-1)
+    else:
+        rot_mat = grahm_schmidt_th(v1, v2)
+    pose_4x4 = to_transformation_matrix_th(t=xyz, R=rot_mat)
+    return pose_4x4
+
+
+def convert_4x4matrix_to_9dof_th(poses_4x4):
+    assert poses_4x4.shape[-2:] == (4, 4)
+    xyz = poses_4x4[..., 0:3, 3]
+    v1 = poses_4x4[..., 0:3, 0]
+    v2 = poses_4x4[..., 0:3, 1]
+    return torch.cat([xyz, v1, v2], dim=-1)
+
+
+def rot_error_np(R_a, R_b, symmetric: bool = True):
+    """
+    pred_rot, gt_rot: [..., 3, 3]
+    returns: [...], in rad
+    """
+    # Compute relative rotation matrix
+    R_a_b = R_b @ np.linalg.pinv(R_a)
+    # Compute angle of rotation from trace of relative rotation matrix
+    trace = np.trace(R_a_b, axis1=-2, axis2=-1)
+    angle_rad = np.arccos(np.clip((trace - 1) / 2.0, -1.0, 1.0))
+    return angle_rad
+
+
 def linear_interpolate_np(
     start: Union["np.ndarray", List[float]],
     end: Union["np.ndarray", List[float]],
